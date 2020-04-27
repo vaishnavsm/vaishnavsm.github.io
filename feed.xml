@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Vaishnav</title>
+    <description>A quick view into my work and passions.
+</description>
+    <link></link>
+    <atom:link href="/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Mon, 27 Apr 2020 12:22:22 +0530</pubDate>
+    <lastBuildDate>Mon, 27 Apr 2020 12:22:22 +0530</lastBuildDate>
+    <generator>Jekyll v3.8.5</generator>
+    
+  </channel>
+</rss>

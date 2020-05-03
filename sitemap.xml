@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
+<loc>/2020/05/02/cached-semantic-maps-beginning/</loc>
+<lastmod>2020-05-02T00:00:00+05:30</lastmod>
+</url>
+<url>
 <loc>/404</loc>
 </url>
 <url>
@@ -8,5 +12,8 @@
 </url>
 <url>
 <loc>/</loc>
+</url>
+<url>
+<loc>/tag/builds/</loc>
 </url>
 </urlset>

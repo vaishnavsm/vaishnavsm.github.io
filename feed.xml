@@ -6,8 +6,8 @@
 </description>
     <link></link>
     <atom:link href="/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Tue, 04 Aug 2020 19:40:16 +0530</pubDate>
-    <lastBuildDate>Tue, 04 Aug 2020 19:40:16 +0530</lastBuildDate>
+    <pubDate>Tue, 04 Aug 2020 21:33:58 +0530</pubDate>
+    <lastBuildDate>Tue, 04 Aug 2020 21:33:58 +0530</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
@@ -114,75 +114,77 @@ There are relations between them, and we can think of them as connections betwee
 &lt;p&gt;Let us consider a couple example queries:&lt;/p&gt;
 
 &lt;h4 id=&quot;what-is-the-age-of-a-player-named-vaishnav-from-the-team-kerala-karelas&quot;&gt;What is the age of a player named “Vaishnav” from the team “Kerala Karelas?”&lt;/h4&gt;
-&lt;p&gt;{
-  from: ‘players’, 
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;{
+  from: 'players', 
   select: [
     {
-      field: ‘age’
+      field: 'age'
     }
   ],
   extends: [
     {
       query: {
-        from: ‘teams’,
+        from: 'teams',
         select: [
           {
-            field: ‘name’,
-            as: ‘team_names’
+            field: 'name',
+            as: 'team_names'
           }
         ]
       },
       select: [
         {
-          field: ‘team_names’,
+          field: 'team_names',
         }
       ]
     }
   ],
   where: [
     {
-      field: ‘name’,
-      operation: ‘equals’,
-      value: ‘vaishnav’,
+      field: 'name',
+      operation: 'equals',
+      value: 'vaishnav',
     },
     {
-      field: ‘team’,
-      operation: ‘contains’,
-      value: ‘Kerala Karelas’
+      field: 'team',
+      operation: 'contains',
+      value: 'Kerala Karelas'
     }
   ]
-}&lt;/p&gt;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;h4 id=&quot;what-is-the-total-runs-of-all-players-named-vaishnav&quot;&gt;What is the total runs of all players named “Vaishnav?”&lt;/h4&gt;
-&lt;p&gt;{
-  from: ‘players’, 
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;{
+  from: 'players', 
   select: [
     {
-      field: ‘runs’,
-      compute: ‘sum’,
-      as: ‘sum_runs’
+      field: 'runs',
+      compute: 'sum',
+      as: 'sum_runs'
     }
   ],
   extends: [
     {
       query: {
-        from: ‘balls’,
+        from: 'balls',
       },
       select: [
         {
-          field: ‘runs’,
+          field: 'runs',
         } 
       ]
     }
   ],
   where: [
     {
-      field: ‘name’,
-      operation: ‘equals’,
-      value: ‘vaishnav’,
+      field: 'name',
+      operation: 'equals',
+      value: 'vaishnav',
     },
   ]
-}&lt;/p&gt;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;Do remember that this syntax is completely made up!&lt;/p&gt;
 

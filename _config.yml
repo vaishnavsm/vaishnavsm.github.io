@@ -1,0 +1,15 @@
+title: Abstract Isolation
+author: Abstract Isolation
+
+url: "https://blog.abis.moe"
+baseurl: "/"
+
+footer_only_homepage: true
+footer_url: "https://github.com/abismoe"
+
+favicon_location: assets/favicon.ico
+
+permalink: /:year-:month-:day-:title/
+sass:
+    style: compressed
+    sass_dir: css

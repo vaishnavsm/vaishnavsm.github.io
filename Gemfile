@@ -11,4 +11,8 @@ group :jekyll_plugins do
   gem "jekyll-sitemap"
   gem "jekyll-feed", "~> 0.12"
   gem "jekyll-org", github: "eggcaker/jekyll-org"
+  gem "pygments.rb"
 end
+
+# Required for Ruby 3+
+gem "webrick"

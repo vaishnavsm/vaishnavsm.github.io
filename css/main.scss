@@ -29,10 +29,6 @@ hr {
     border-top: 1px solid rgba(0, 0, 0, 0.1);
     border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
-code {
-    background-color: #d8e7ff;
-    color: #002b72;
-}
 
 // divs
 
@@ -292,4 +288,19 @@ table tr th :first-child, table tr td :first-child {
 }
 table tr th :last-child, table tr td :last-child {
     margin: 0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+// For Code Blocks
+.highlight {
+    border-radius: 4px;
+}
+
+pre.highlight {
+    padding: 16px;
+    overflow: auto;
+    max-height: 90vh;
 }

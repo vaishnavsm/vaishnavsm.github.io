@@ -9,6 +9,8 @@ main {
     --color-border-default: #cacab0;
     --color-border-primary: #cacab0;
     --color-input-border:  #cacab0;
+    --color-accent-muted: #cacab0;
+    --color-box-border-info: #cacab0;
     --color-btn-primary-border: #cacab0;
 
     --color-canvas-inset: #ffffc5;

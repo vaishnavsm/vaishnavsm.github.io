@@ -2,10 +2,10 @@
 # Refer for explanation to following link:
 # https://github.com/evilmartians/lefthook/blob/master/docs/full_guide.md
 #
-pre-push:
+pre-commit:
   commands:
     build:
-      run: build.sh
+      run: ./build.sh && git add {staged_files}
 #
 # pre-commit:
 #   parallel: true

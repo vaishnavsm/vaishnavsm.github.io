@@ -37,3 +37,5 @@ That's it for now. Before we leave, here's a funny snippet:
 #+end_src
 
 ;)
+
+(I'm updating this post to test our build script.)

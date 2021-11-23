@@ -4,11 +4,12 @@ author: Abstract Isolation
 url: "https://blog.abis.moe"
 
 footer_only_homepage: true
-footer_url: "https://github.com/abismoe"
+footer_url: "https://github.com/abismoe/blog"
+footer_text: "Powered by Jekyll. Theme forked from parchment."
 
 favicon_location: assets/favicon.ico
 
 permalink: /:year-:month-:day-:title/
 sass:
-    style: compressed
-    sass_dir: css
+  style: compressed
+  sass_dir: css

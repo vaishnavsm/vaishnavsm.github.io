@@ -25,3 +25,12 @@ main {
 .gsc-header {
  padding-bottom:1rem
 }
+.color-bg-overlay {
+    background-color: #ffffdd;
+}
+.color-box-border-info {
+    border-color: #d1d1b7;
+}
+.color-border-primary {
+    border-color: #d1d1b7;
+}

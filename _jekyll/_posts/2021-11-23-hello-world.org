@@ -1,11 +1,3 @@
----
-title: Org Test
-layout: post
-subtitle: Testing out org
-tags:
-  - test
-  - org
----
 #+TITLE: Hello, world!
 #+LAYOUT: post
 #+TAGS: meta

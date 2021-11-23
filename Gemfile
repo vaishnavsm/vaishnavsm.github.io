@@ -12,6 +12,7 @@ group :jekyll_plugins do
   gem "jekyll-feed", "~> 0.12"
   gem "jekyll-org", github: "eggcaker/jekyll-org"
   gem "pygments.rb"
+  gem "jekyll-postfiles"
 end
 
 # Required for Ruby 3+

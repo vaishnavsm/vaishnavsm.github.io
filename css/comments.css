@@ -4,7 +4,15 @@ main .pagination-loader-container {
 
 /*! Custom CSS */
 main {
- color-scheme:dark
+    --color-canvas-overlay: #fefecd;
+    --color-bg-overlay: #fefecd;
+    --color-border-default: #cacab0;
+    --color-border-primary: #cacab0;
+    --color-input-border:  #cacab0;
+    --color-btn-primary-border: #cacab0;
+
+    --color-canvas-inset: #ffffc5;
+    --color-bg-canvas-inset: #ffffc5;
 }
 .gsc-reactions-count {
  display:none
@@ -24,13 +32,4 @@ main {
 }
 .gsc-header {
  padding-bottom:1rem
-}
-.color-bg-overlay {
-    background-color: #ffffdd;
-}
-.color-box-border-info {
-    border-color: #d1d1b7;
-}
-.color-border-primary {
-    border-color: #d1d1b7;
 }

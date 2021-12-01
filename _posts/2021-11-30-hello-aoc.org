@@ -1,4 +1,5 @@
 #+TITLE: Hello, Advent of Code!
+#+AUTHOR: Shrikanth Upadhayaya
 #+LAYOUT: post
 #+tags: aoc roc fp programming
 

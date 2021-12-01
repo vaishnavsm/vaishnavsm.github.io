@@ -3,6 +3,9 @@ layout: default
 ---
 
 <div class="page-subtitle">
+  {% if page.author %}
+  By: {{ page.author }}
+  {% endif %}<br />
   {% for tag in page.tags %} {% if page.tags.first == tag %}
   <b>[</b>
   {% endif %}
@@ -14,16 +17,7 @@ layout: default
 
 {{content}}
 
-<script src="https://giscus.app/client.js"
-        data-repo="abismoe/blog"
-        data-repo-id="R_kgDOGapKcA"
-        data-category="Blog Comments"
-        data-category-id="DIC_kwDOGapKcM4B__LM"
-        data-mapping="title"
-        data-reactions-enabled="1"
-        data-emit-metadata="0"
-        data-theme="{{ site.url }}/css/comments.css"
-        data-lang="en"
-        crossorigin="anonymous"
-        async>
-</script>
+<script src="https://giscus.app/client.js" data-repo="abismoe/blog" data-repo-id="R_kgDOGapKcA"
+  data-category="Blog Comments" data-category-id="DIC_kwDOGapKcM4B__LM" data-mapping="title" data-reactions-enabled="1"
+  data-emit-metadata="0" data-theme="{{ site.url }}/css/comments.css" data-lang="en" crossorigin="anonymous" async>
+  </script>

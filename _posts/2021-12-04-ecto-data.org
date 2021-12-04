@@ -53,7 +53,7 @@ Before I begin, here are two stories.
    insane, who would do that?
 
 ** A Story of Rails
-   I've professionally worked on a Rails service for two years, and
+   I've professionally worked on a Rails service for years, and
    even since then I've loved using it whenever I wanted to make an
    app. With Rails (and now, Turbo), I can simply build something,
    deploy it on a cheap machine and use it from anywhere without having

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.1">Jekyll</generator><link href="https://blog.abis.moe/feed.xml" rel="self" type="application/atom+xml" /><link href="https://blog.abis.moe/" rel="alternate" type="text/html" /><updated>2021-12-04T09:10:19+05:30</updated><id>https://blog.abis.moe/feed.xml</id><title type="html">Abstract Isolation</title><author><name>Abstract Isolation</name></author><entry><title type="html">Ecto and Thinking About Data</title><link href="https://blog.abis.moe/2021-12-04-ecto-data/" rel="alternate" type="text/html" title="Ecto and Thinking About Data" /><published>2021-12-04T00:00:00+05:30</published><updated>2021-12-04T00:00:00+05:30</updated><id>https://blog.abis.moe/ecto-data</id><content type="html" xml:base="https://blog.abis.moe/2021-12-04-ecto-data/">&lt;h1&gt;Two Stories&lt;/h1&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.1">Jekyll</generator><link href="https://blog.abis.moe/feed.xml" rel="self" type="application/atom+xml" /><link href="https://blog.abis.moe/" rel="alternate" type="text/html" /><updated>2021-12-04T18:13:34+05:30</updated><id>https://blog.abis.moe/feed.xml</id><title type="html">Abstract Isolation</title><author><name>Abstract Isolation</name></author><entry><title type="html">Ecto and Thinking About Data</title><link href="https://blog.abis.moe/2021-12-04-ecto-data/" rel="alternate" type="text/html" title="Ecto and Thinking About Data" /><published>2021-12-04T00:00:00+05:30</published><updated>2021-12-04T00:00:00+05:30</updated><id>https://blog.abis.moe/ecto-data</id><content type="html" xml:base="https://blog.abis.moe/2021-12-04-ecto-data/">&lt;h1&gt;Two Stories&lt;/h1&gt;
 &lt;p&gt;Before I begin, here are two stories.&lt;/p&gt;
 &lt;h2&gt;A Story of Phoenix&lt;/h2&gt;
 &lt;p&gt;I picked up Phoenix for a pet project. To get my bearings, I wrote a
@@ -38,7 +38,7 @@
   didn&amp;#8217;t - and let the caller figure out which one to call. That&amp;#8217;s
   insane, who would do that?&lt;/p&gt;
 &lt;h2&gt;A Story of Rails&lt;/h2&gt;
-&lt;p&gt;I&amp;#8217;ve professionally worked on a Rails service for two years, and
+&lt;p&gt;I&amp;#8217;ve professionally worked on a Rails service for years, and
   even since then I&amp;#8217;ve loved using it whenever I wanted to make an
   app. With Rails (and now, Turbo), I can simply build something,
   deploy it on a cheap machine and use it from anywhere without having

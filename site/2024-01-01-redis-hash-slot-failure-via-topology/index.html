@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    
+
+  <title>Redis Hash Slot Failure via Topology - Vaishnav Sreekanth Menon</title>
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="keywords"
+    content="blog, Vaishnav Sreekanth Menon, Vaishnav Sreekanth Menon, jekyll"
+  />
+  <meta name="author" content="Vaishnav Sreekanth Menon" />
+
+  <meta name="description" content="" />
+  <link
+    href="https://fonts.googleapis.com/css?family=Inconsolata:400,700"
+    rel="stylesheet"
+    type="text/css"
+  />
+  <link rel="stylesheet" href="https://vaishnavsm.com/css/main.css" />
+  <link rel="stylesheet" href="https://vaishnavsm.com/css/syntax.css" />
+  <link rel="icon" type="image/ico" href="https://vaishnavsm.com/assets/favicon.ico" />
+  <link rel="shortcut-icon" type="image/ico" href="https://vaishnavsm.com/assets/favicon.ico" />
+
+  <!-- For Facebook -->
+  <meta property="og:title" content="Redis Hash Slot Failure via Topology" />
+  <meta property="og:image" itemprop="image" content="https://vaishnavsm.com/assets/favicon.ico" />
+  <meta property="og:description" content="" />
+
+  <!-- For Twitter -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Redis Hash Slot Failure via Topology - Vaishnav Sreekanth Menon" />
+  <meta name="twitter:description" content="" />
+  <meta name="twitter:image" content="https://vaishnavsm.com/assets/favicon.ico" />
+</head>
+
+
+  <body>
+    <div class="container">
+      <div class="navbar">
+  <a class="site-title" href="https://vaishnavsm.com/">
+    Vaishnav Sreekanth Menon
+  </a>
+
+  <ul class="pull-right">
+    
+  </ul>
+
+  <hr />
+</div>
+
+      <div class="page-title">Redis Hash Slot Failure via Topology</div>
+      <div class="content"><div class="page-subtitle">
+  <br />
+   
+  <b>[</b>
+  
+  <a href="/tags/#DevOps" title="DevOps">DevOps</a>
+  
+  <b>]</b>
+   
+</div>
+
+<p>One of the (many) problems with running a production grade Redis cluster in my experience has been maintaining the topology of the cluster.</p>
+
+<p>What’s that? When you run Redis in Cluster mode, you run several processes of Redis [aside: upto 1 per core, and upto ~80% RAM utilization total, in my experience is the maximum before you end up having to face the dreaded issues with RAM overusage when dumps are created, leading to crashes], with each process being either run in master mode, or run as a replica of a master, and with each master assigned a fixed hash slot.</p>
+
+<p>There are two reasons why you run in cluster mode:</p>
+
+<ol>
+  <li>Importantly, to scale beyond the single process limitation in Redis</li>
+  <li>Less importantly, for High Availability (as this can be achieved by sentinel as well)</li>
+</ol>
+
+<p>The problem of topology comes up when you care about High Availability in the Redis Cluster—if you’re not careful, you can run into situations where:</p>
+
+<ol>
+  <li>Too many of the replicas of a master are on the same host as the master. Here, if that single host fails, the entire hash slot has a chance to fail.</li>
+  <li>Too many masters are on the same host. Here, if that single host fails, multiple hash slots will need to switch over simultaneously.</li>
+</ol>
+
+<p>The second issue is significantly less of a problem than the first, as switchovers are relatively uneventful most of the time. The rest of this article describes how you can deal with the first issue. You can use similar techniques for the second one too.</p>
+
+<h1 id="monitoring-topology">Monitoring Topology</h1>
+
+<p>Finding the current topology of the redis cluster is super easy, just run</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># note, this is an O(N) @slow command - you don't want to spam your instance with this every second!</span>
+<span class="o">&gt;</span> CLUSTER NODES
+
+<span class="c"># example taken from the official docs: https://redis.io/commands/cluster-nodes/</span>
+<span class="c"># note the ips, and the mapping of who is a master to whom</span>
+<span class="c"># &lt;id&gt;                                   &lt;ip:port@cport[,hostname]&gt;      &lt;flags&gt; &lt;master&gt; &lt;ping-sent&gt; &lt;pong-recv&gt; &lt;config-epoch&gt; &lt;link-state&gt; &lt;slot&gt; &lt;slot&gt; ... &lt;slot&gt;</span>
+07c37dfeb235213a872192d90877d0cd55635b91 127.0.0.1:30004@31004,hostname4 slave e7d1eecce10fd6bb5eb35b9f99a514335d9ba9ca 0 1426238317239 4 connected
+67ed2db8d677e59ec4a4cefb06858cf2a1a89fa1 127.0.0.1:30002@31002,hostname2 master - 0 1426238316232 2 connected 5461-10922
+292f8b365bb7edb5e285caf0b7e6ddc7265d2f4f 127.0.0.1:30003@31003,hostname3 master - 0 1426238318243 3 connected 10923-16383
+6ec23923021cf3ffec47632106199cb7f496ce01 127.0.0.1:30005@31005,hostname5 slave 67ed2db8d677e59ec4a4cefb06858cf2a1a89fa1 0 1426238316232 5 connected
+824fe116063bc5fcf9f4ffd895bc17aee7731ac3 127.0.0.1:30006@31006,hostname6 slave 292f8b365bb7edb5e285caf0b7e6ddc7265d2f4f 0 1426238317741 6 connected
+e7d1eecce10fd6bb5eb35b9f99a514335d9ba9ca 127.0.0.1:30001@31001,hostname1 myself,master - 0 0 1 connected 0-5460
+</code></pre></div></div>
+
+<p>From here, we can build a representation of which nodes are replicas of which nodes and which nodes lie on which host, using which we can deduce the topology and which hash slots are at risk. To do this, we just map the <code class="language-plaintext highlighter-rouge">ip:port</code> pair to the current state flag (<code class="language-plaintext highlighter-rouge">slave</code> or <code class="language-plaintext highlighter-rouge">master</code>), and the master’s id following it.</p>
+
+<p>This is a bit tedious, so you can use this convenience script I’ve written:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># MIT Licenced, feel free to fork/copy from: https://github.com/vaishnavsm/redis-topology-monitor</span>
+<span class="c"># note that in this example, I used a docker network, </span>
+<span class="c"># and so each redis instance is on a different "host"</span>
+npx redis-topology-monitor find-topology <span class="nt">-u</span> redis://localhost:6379 <span class="nt">-a</span> password
+Overview
+<span class="nt">-------</span>
+👏 Looks like your cluster is evenly distributed, and no host contains more than one instance of a <span class="nb">hash </span>slot
+┌─────────┬─────────────┬─────────────────┬─────────────────────┬───────────────────────────────────────┬────────────────────────────────────────────┬─────────────────────────┐
+│ <span class="o">(</span>index<span class="o">)</span> │ Slot Number │ Number of Hosts │ Maximum on One Host │                 Hosts                 │                 Master Id                  │     Master Address      │
+├─────────┼─────────────┼─────────────────┼─────────────────────┼───────────────────────────────────────┼────────────────────────────────────────────┼─────────────────────────┤
+│    0    │      1      │        3        │          1          │ <span class="s1">'172.25.0.4, 172.25.0.8, 172.25.0.7'</span>  │ <span class="s1">'5164940d4f389030a47af63447f2f8b425b17fd0'</span> │ <span class="s1">'172.25.0.4:6379@16379'</span> │
+│    1    │      2      │        3        │          1          │ <span class="s1">'172.25.0.2, 172.25.0.5, 172.25.0.6'</span>  │ <span class="s1">'9cbfd6b8fcc1defbf1e726ee22c1a727cb20c1ef'</span> │ <span class="s1">'172.25.0.2:6379@16379'</span> │
+│    2    │      3      │        3        │          1          │ <span class="s1">'172.25.0.9, 172.25.0.3, 172.25.0.10'</span> │ <span class="s1">'b2bc47d17f4ce689fffc4e6a49c9a45f9487996f'</span> │ <span class="s1">'172.25.0.9:6379@16379'</span> │
+└─────────┴─────────────┴─────────────────┴─────────────────────┴───────────────────────────────────────┴────────────────────────────────────────────┴─────────────────────────┘
+
+Slots by Host
+<span class="nt">-------</span>
+┌─────────┬───────────────┬────────┬────────┬────────┐
+│ <span class="o">(</span>index<span class="o">)</span> │     Host      │ Slot 1 │ Slot 2 │ Slot 3 │
+├─────────┼───────────────┼────────┼────────┼────────┤
+│    0    │ <span class="s1">'172.25.0.4'</span>  │   1    │        │        │
+│    1    │ <span class="s1">'172.25.0.8'</span>  │   1    │        │        │
+│    2    │ <span class="s1">'172.25.0.7'</span>  │   1    │        │        │
+│    3    │ <span class="s1">'172.25.0.2'</span>  │        │   1    │        │
+│    4    │ <span class="s1">'172.25.0.5'</span>  │        │   1    │        │
+│    5    │ <span class="s1">'172.25.0.6'</span>  │        │   1    │        │
+│    6    │ <span class="s1">'172.25.0.9'</span>  │        │        │   1    │
+│    7    │ <span class="s1">'172.25.0.3'</span>  │        │        │   1    │
+│    8    │ <span class="s1">'172.25.0.10'</span> │        │        │   1    │
+└─────────┴───────────────┴────────┴────────┴────────┘
+
+Slot Statuses
+<span class="nt">-------</span>
+
+Slot 1
+✅ This slot is perfectly evenly distributed
+
+Slot 2
+✅ This slot is perfectly evenly distributed
+
+Slot 3
+✅ This slot is perfectly evenly distributed
+</code></pre></div></div>
+
+<h1 id="manually-changing-the-topology">Manually Changing the Topology</h1>
+
+<p>The most effective way I have seen to manually change the topology is:</p>
+
+<ol>
+  <li>Have at least two extra instances, always on different hosts and always in replica mode, which act as “extra” replicas</li>
+  <li>When you detect a topology issue, pick one of these instances and make it into a replica of the problematic hash slot. This will always be possible, since two different nodes have one replica each.</li>
+  <li>After the above, if both the “extra replicas” are on the same host, find any random hash slot which does not have an instance on that host (if none exist, find the one that is “most spread out” in terms of topology) and switch one of the “extra replicas” to a replica of this hash slot. Mark one of the replicas of this hash slot as the “extra”</li>
+  <li>Repeat until the topology is safe</li>
+</ol>
+
+<p><img src="/assets/img/posts/2024-01-01-redis-hash-slot-failure-via-topology/shuffling.png" alt="Untitled" /></p>
+
+<p>Note that we could have stopped at any time after the first step, since the immediate issue of single node failure has been solved.</p>
+
+<p>One benefit of this mechanism is that the more “extra replicas” you add, the more you can swap topologies at the same time.</p>
+
+<p>Note that if you have multiple “unsafe” hash slots on different machines, you can swap the replicas between them instead of swapping to the “extra replica” over and over.</p>
+
+<p>How do you actually “swap” these replicas you ask? Surprisingly, this is the easiest step—we don’t even need a helper script:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Run on the redis instance you want to change the status of</span>
+<span class="c"># This assumes that this instance is a replica - </span>
+<span class="c"># if it is a master, this will fail unless it is empty</span>
+<span class="c"># if it is an empty master, it will change into a replica</span>
+<span class="c"># docs here: https://redis.io/commands/cluster-replicate/</span>
+CLUSTER REPLICATE &lt;node <span class="nb">id </span>of master&gt;
+</code></pre></div></div>
+
+<h1 id="automatically-changing-the-topology">Automatically Changing the Topology</h1>
+
+<p>This involves a two-step process - we need to monitor the Redis cluster’s topology for potentially risky topologies, and then decide to change the topology on the fly. This is a complex operation - you may want to consider other factors such as the current load on the cluster, the predicted load during the changing operation, and other business requirements. However, this is the most <em>exciting</em> part of this problem, so I’m taking a stab at it!</p>
+
+<More to="" come="" soon="">
+</More>
+
+
+<script src="https://giscus.app/client.js"
+  data-repo="vaishnavsm/vaishnavsm.github.io"
+  data-repo-id="R_kgDOLAi5YA"
+  data-category="Announcements"
+  data-category-id="DIC_kwDOLAi5YM4CcLho"
+  data-mapping="og:title"
+  data-strict="0"
+  data-reactions-enabled="1"
+  data-emit-metadata="0"
+  data-input-position="top"
+  data-theme="https://vaishnavsm.com/css/comments.css"
+  data-lang="en"
+  data-loading="lazy"
+  crossorigin="anonymous"
+  async>
+</script></div>
+      <div class="footer">
+  <hr />
+  <a href="https://github.com/vaishnavsm/vaishnavsm.github.io">Powered by Jekyll. Theme forked from parchment.</a>
+</div>
+
+    </div>
+  </body>
+</html>

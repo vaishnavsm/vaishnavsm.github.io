@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.1">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-01-03T20:32:27-06:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Vaishnav Sreekanth Menon</title><author><name>Vaishnav Sreekanth Menon</name></author><entry><title type="html">Redis Hash Slot Failure via Topology</title><link href="http://localhost:4000/2024-01-01-redis-hash-slot-failure-via-topology/" rel="alternate" type="text/html" title="Redis Hash Slot Failure via Topology" /><published>2024-01-01T00:00:00-06:00</published><updated>2024-01-01T00:00:00-06:00</updated><id>http://localhost:4000/redis-hash-slot-failure-via-topology</id><content type="html" xml:base="http://localhost:4000/2024-01-01-redis-hash-slot-failure-via-topology/">&lt;p&gt;One of the (many) problems with running a production grade Redis cluster in my experience has been maintaining the topology of the cluster.&lt;/p&gt;
+
+&lt;p&gt;What’s that? When you run Redis in Cluster mode, you run several processes of Redis [aside: upto 1 per core, and upto ~80% RAM utilization total, in my experience is the maximum before you end up having to face the dreaded issues with RAM overusage when dumps are created, leading to crashes], with each process being either run in master mode, or run as a replica of a master, and with each master assigned a fixed hash slot.&lt;/p&gt;
+
+&lt;p&gt;There are two reasons why you run in cluster mode:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Importantly, to scale beyond the single process limitation in Redis&lt;/li&gt;
+  &lt;li&gt;Less importantly, for High Availability (as this can be achieved by sentinel as well)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;The problem of topology comes up when you care about High Availability in the Redis Cluster—if you’re not careful, you can run into situations where:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Too many of the replicas of a master are on the same host as the master. Here, if that single host fails, the entire hash slot has a chance to fail.&lt;/li&gt;
+  &lt;li&gt;Too many masters are on the same host. Here, if that single host fails, multiple hash slots will need to switch over simultaneously.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;The second issue is significantly less of a problem than the first, as switchovers are relatively uneventful most of the time. The rest of this article describes how you can deal with the first issue. You can use similar techniques for the second one too.&lt;/p&gt;
+
+&lt;h1 id=&quot;monitoring-topology&quot;&gt;Monitoring Topology&lt;/h1&gt;
+
+&lt;p&gt;Finding the current topology of the redis cluster is super easy, just run&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# note, this is an O(N) @slow command - you don&apos;t want to spam your instance with this every second!&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; CLUSTER NODES
+
+&lt;span class=&quot;c&quot;&gt;# example taken from the official docs: https://redis.io/commands/cluster-nodes/&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# note the ips, and the mapping of who is a master to whom&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# &amp;lt;id&amp;gt;                                   &amp;lt;ip:port@cport[,hostname]&amp;gt;      &amp;lt;flags&amp;gt; &amp;lt;master&amp;gt; &amp;lt;ping-sent&amp;gt; &amp;lt;pong-recv&amp;gt; &amp;lt;config-epoch&amp;gt; &amp;lt;link-state&amp;gt; &amp;lt;slot&amp;gt; &amp;lt;slot&amp;gt; ... &amp;lt;slot&amp;gt;&lt;/span&gt;
+07c37dfeb235213a872192d90877d0cd55635b91 127.0.0.1:30004@31004,hostname4 slave e7d1eecce10fd6bb5eb35b9f99a514335d9ba9ca 0 1426238317239 4 connected
+67ed2db8d677e59ec4a4cefb06858cf2a1a89fa1 127.0.0.1:30002@31002,hostname2 master - 0 1426238316232 2 connected 5461-10922
+292f8b365bb7edb5e285caf0b7e6ddc7265d2f4f 127.0.0.1:30003@31003,hostname3 master - 0 1426238318243 3 connected 10923-16383
+6ec23923021cf3ffec47632106199cb7f496ce01 127.0.0.1:30005@31005,hostname5 slave 67ed2db8d677e59ec4a4cefb06858cf2a1a89fa1 0 1426238316232 5 connected
+824fe116063bc5fcf9f4ffd895bc17aee7731ac3 127.0.0.1:30006@31006,hostname6 slave 292f8b365bb7edb5e285caf0b7e6ddc7265d2f4f 0 1426238317741 6 connected
+e7d1eecce10fd6bb5eb35b9f99a514335d9ba9ca 127.0.0.1:30001@31001,hostname1 myself,master - 0 0 1 connected 0-5460
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;From here, we can build a representation of which nodes are replicas of which nodes and which nodes lie on which host, using which we can deduce the topology and which hash slots are at risk. To do this, we just map the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ip:port&lt;/code&gt; pair to the current state flag (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;slave&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;master&lt;/code&gt;), and the master’s id following it.&lt;/p&gt;
+
+&lt;p&gt;This is a bit tedious, so you can use this convenience script I’ve written:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# MIT Licenced, feel free to fork/copy from: https://github.com/vaishnavsm/redis-topology-monitor&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# note that in this example, I used a docker network, &lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# and so each redis instance is on a different &quot;host&quot;&lt;/span&gt;
+npx redis-topology-monitor find-topology &lt;span class=&quot;nt&quot;&gt;-u&lt;/span&gt; redis://localhost:6379 &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt; password
+Overview
+&lt;span class=&quot;nt&quot;&gt;-------&lt;/span&gt;
+👏 Looks like your cluster is evenly distributed, and no host contains more than one instance of a &lt;span class=&quot;nb&quot;&gt;hash &lt;/span&gt;slot
+┌─────────┬─────────────┬─────────────────┬─────────────────────┬───────────────────────────────────────┬────────────────────────────────────────────┬─────────────────────────┐
+│ &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;index&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; │ Slot Number │ Number of Hosts │ Maximum on One Host │                 Hosts                 │                 Master Id                  │     Master Address      │
+├─────────┼─────────────┼─────────────────┼─────────────────────┼───────────────────────────────────────┼────────────────────────────────────────────┼─────────────────────────┤
+│    0    │      1      │        3        │          1          │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.4, 172.25.0.8, 172.25.0.7&apos;&lt;/span&gt;  │ &lt;span class=&quot;s1&quot;&gt;&apos;5164940d4f389030a47af63447f2f8b425b17fd0&apos;&lt;/span&gt; │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.4:6379@16379&apos;&lt;/span&gt; │
+│    1    │      2      │        3        │          1          │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.2, 172.25.0.5, 172.25.0.6&apos;&lt;/span&gt;  │ &lt;span class=&quot;s1&quot;&gt;&apos;9cbfd6b8fcc1defbf1e726ee22c1a727cb20c1ef&apos;&lt;/span&gt; │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.2:6379@16379&apos;&lt;/span&gt; │
+│    2    │      3      │        3        │          1          │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.9, 172.25.0.3, 172.25.0.10&apos;&lt;/span&gt; │ &lt;span class=&quot;s1&quot;&gt;&apos;b2bc47d17f4ce689fffc4e6a49c9a45f9487996f&apos;&lt;/span&gt; │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.9:6379@16379&apos;&lt;/span&gt; │
+└─────────┴─────────────┴─────────────────┴─────────────────────┴───────────────────────────────────────┴────────────────────────────────────────────┴─────────────────────────┘
+
+Slots by Host
+&lt;span class=&quot;nt&quot;&gt;-------&lt;/span&gt;
+┌─────────┬───────────────┬────────┬────────┬────────┐
+│ &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;index&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; │     Host      │ Slot 1 │ Slot 2 │ Slot 3 │
+├─────────┼───────────────┼────────┼────────┼────────┤
+│    0    │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.4&apos;&lt;/span&gt;  │   1    │        │        │
+│    1    │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.8&apos;&lt;/span&gt;  │   1    │        │        │
+│    2    │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.7&apos;&lt;/span&gt;  │   1    │        │        │
+│    3    │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.2&apos;&lt;/span&gt;  │        │   1    │        │
+│    4    │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.5&apos;&lt;/span&gt;  │        │   1    │        │
+│    5    │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.6&apos;&lt;/span&gt;  │        │   1    │        │
+│    6    │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.9&apos;&lt;/span&gt;  │        │        │   1    │
+│    7    │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.3&apos;&lt;/span&gt;  │        │        │   1    │
+│    8    │ &lt;span class=&quot;s1&quot;&gt;&apos;172.25.0.10&apos;&lt;/span&gt; │        │        │   1    │
+└─────────┴───────────────┴────────┴────────┴────────┘
+
+Slot Statuses
+&lt;span class=&quot;nt&quot;&gt;-------&lt;/span&gt;
+
+Slot 1
+✅ This slot is perfectly evenly distributed
+
+Slot 2
+✅ This slot is perfectly evenly distributed
+
+Slot 3
+✅ This slot is perfectly evenly distributed
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;manually-changing-the-topology&quot;&gt;Manually Changing the Topology&lt;/h1&gt;
+
+&lt;p&gt;The most effective way I have seen to manually change the topology is:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Have at least two extra instances, always on different hosts and always in replica mode, which act as “extra” replicas&lt;/li&gt;
+  &lt;li&gt;When you detect a topology issue, pick one of these instances and make it into a replica of the problematic hash slot. This will always be possible, since two different nodes have one replica each.&lt;/li&gt;
+  &lt;li&gt;After the above, if both the “extra replicas” are on the same host, find any random hash slot which does not have an instance on that host (if none exist, find the one that is “most spread out” in terms of topology) and switch one of the “extra replicas” to a replica of this hash slot. Mark one of the replicas of this hash slot as the “extra”&lt;/li&gt;
+  &lt;li&gt;Repeat until the topology is safe&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/posts/2024-01-01-redis-hash-slot-failure-via-topology/shuffling.png&quot; alt=&quot;Untitled&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Note that we could have stopped at any time after the first step, since the immediate issue of single node failure has been solved.&lt;/p&gt;
+
+&lt;p&gt;One benefit of this mechanism is that the more “extra replicas” you add, the more you can swap topologies at the same time.&lt;/p&gt;
+
+&lt;p&gt;Note that if you have multiple “unsafe” hash slots on different machines, you can swap the replicas between them instead of swapping to the “extra replica” over and over.&lt;/p&gt;
+
+&lt;p&gt;How do you actually “swap” these replicas you ask? Surprisingly, this is the easiest step—we don’t even need a helper script:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Run on the redis instance you want to change the status of&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# This assumes that this instance is a replica - &lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# if it is a master, this will fail unless it is empty&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# if it is an empty master, it will change into a replica&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# docs here: https://redis.io/commands/cluster-replicate/&lt;/span&gt;
+CLUSTER REPLICATE &amp;lt;node &lt;span class=&quot;nb&quot;&gt;id &lt;/span&gt;of master&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;automatically-changing-the-topology&quot;&gt;Automatically Changing the Topology&lt;/h1&gt;
+
+&lt;p&gt;This involves a two-step process - we need to monitor the Redis cluster’s topology for potentially risky topologies, and then decide to change the topology on the fly. This is a complex operation - you may want to consider other factors such as the current load on the cluster, the predicted load during the changing operation, and other business requirements. However, this is the most &lt;em&gt;exciting&lt;/em&gt; part of this problem, so I’m taking a stab at it!&lt;/p&gt;
+
+&lt;More to=&quot;&quot; come=&quot;&quot; soon=&quot;&quot;&gt;
+&lt;/More&gt;</content><author><name>Vaishnav Sreekanth Menon</name></author><category term="DevOps" /><summary type="html">One of the (many) problems with running a production grade Redis cluster in my experience has been maintaining the topology of the cluster.</summary></entry></feed>

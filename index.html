@@ -1,6 +1,16 @@
 ---
-layout: default
+layout: home
 ---
+
+<main class="content">
+  <nav class="socials-bar">
+    {% for socials in site.socials %}
+      <li><a href="{{ socials.href }}"><i data-feather="{{ socials.title }}"></i></a></li>
+    {% endfor %}
+  </nav>
+</main>
+
+<hr />
 
 {% assign has_post = false %} {% for post in site.posts %} {% if post.private ==
 true %} {% continue %} {% endif %}
@@ -24,5 +34,5 @@ true %} {% continue %} {% endif %}
 {% if forloop.last == false %}
 <hr />
 {% endif %} {% assign has_post = true %} {% endfor %} {% if has_post == false %}
-<div class="no-post">I've lost the ink pot. Check back later...</div>
+<div class="no-post">That's weird... I was sure I put it here 🤔</div>
 {% endif %}

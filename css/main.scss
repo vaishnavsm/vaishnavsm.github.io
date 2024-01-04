@@ -338,3 +338,15 @@ code {
   padding-left: 4px;
   padding-right: 4px;
 }
+
+main.content {
+  padding: 1rem;
+  .socials-bar {
+    display: flex;
+    justify-content: center;
+    gap: 4rem;
+    li {
+      list-style-type: none;
+    }
+  }
+}

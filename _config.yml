@@ -1,15 +1,23 @@
-title: Abstract Isolation
-author: Abstract Isolation
+title: Vaishnav Sreekanth Menon
+author: Vaishnav Sreekanth Menon
 
-destination: docs
+destination: site
 
-url: "https://blog.abis.moe"
+url: "https://vaishnavsm.com"
 
 footer_only_homepage: true
-footer_url: "https://github.com/abismoe/blog"
+footer_url: "https://github.com/vaishnavsm/vaishnavsm.github.io"
 footer_text: "Powered by Jekyll. Theme forked from parchment."
 
 favicon_location: assets/favicon.ico
+
+socials:
+  - href: mailto://hey@vaishnavsm.com
+    title: mail
+  - href: https://github.com/vaishnavsm
+    title: github
+  - href: https://www.linkedin.com/in/vaishnavsm/
+    title: linkedin
 
 permalink: /:year-:month-:day-:title/
 sass:

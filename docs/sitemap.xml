@@ -1,24 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
-<loc>https://blog.abis.moe/2021-11-23-hello-world/</loc>
-<lastmod>2021-11-23T00:00:00+05:30</lastmod>
+<loc>http://localhost:4000/2024-01-01-redis-hash-slot-failure-via-topology/</loc>
+<lastmod>2024-01-01T00:00:00-06:00</lastmod>
 </url>
 <url>
-<loc>https://blog.abis.moe/2021-11-30-hello-aoc/</loc>
-<lastmod>2021-11-30T00:00:00+05:30</lastmod>
+<loc>http://localhost:4000/</loc>
 </url>
 <url>
-<loc>https://blog.abis.moe/2021-12-04-ecto-data/</loc>
-<lastmod>2021-12-04T00:00:00+05:30</lastmod>
-</url>
-<url>
-<loc>https://blog.abis.moe/about/</loc>
-</url>
-<url>
-<loc>https://blog.abis.moe/</loc>
-</url>
-<url>
-<loc>https://blog.abis.moe/tags/</loc>
+<loc>http://localhost:4000/tags/</loc>
 </url>
 </urlset>

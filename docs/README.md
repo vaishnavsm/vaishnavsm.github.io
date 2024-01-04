@@ -1,4 +1,4 @@
-# The Abstract Isolation Blog
+# Personal Blog
 
 ## Credits
 

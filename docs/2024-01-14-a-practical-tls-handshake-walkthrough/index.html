@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    
+
+  <title>A Practical TLS Handshake Walkthrough - Vaishnav Sreekanth Menon</title>
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="keywords"
+    content="blog, Vaishnav Sreekanth Menon, Vaishnav Sreekanth Menon, jekyll"
+  />
+  <meta name="author" content="Vaishnav Sreekanth Menon" />
+
+  <meta name="description" content="" />
+  <link
+    href="https://fonts.googleapis.com/css?family=Inconsolata:400,700"
+    rel="stylesheet"
+    type="text/css"
+  />
+  <link rel="stylesheet" href="https://vaishnavsm.com/css/main.css" />
+  <link rel="stylesheet" href="https://vaishnavsm.com/css/syntax.css" />
+  <link rel="icon" type="image/ico" href="https://vaishnavsm.com/assets/favicon.ico" />
+  <link rel="shortcut-icon" type="image/ico" href="https://vaishnavsm.com/assets/favicon.ico" />
+
+  <!-- For Facebook -->
+  <meta property="og:title" content="A Practical TLS Handshake Walkthrough" />
+  <meta property="og:image" itemprop="image" content="https://vaishnavsm.com/assets/favicon.ico" />
+  <meta property="og:description" content="" />
+
+  <!-- For Twitter -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="A Practical TLS Handshake Walkthrough - Vaishnav Sreekanth Menon" />
+  <meta name="twitter:description" content="" />
+  <meta name="twitter:image" content="https://vaishnavsm.com/assets/favicon.ico" />
+</head>
+
+
+  <body>
+    <div class="container">
+      <div class="navbar">
+  <a class="site-title" href="https://vaishnavsm.com/">
+    Vaishnav Sreekanth Menon
+  </a>
+
+  <ul class="pull-right">
+    
+  </ul>
+
+  <hr />
+</div>
+
+      <div class="page-title">A Practical TLS Handshake Walkthrough</div>
+      <div class="content"><div class="page-subtitle">
+  <br />
+   
+  <b>[</b>
+  
+  <a href="/tags/#Walkthroughs" title="Walkthroughs">Walkthroughs</a>
+   ,   
+  <a href="/tags/#Security" title="Security">Security</a>
+  
+  <b>]</b>
+   
+</div>
+
+<h1 id="what-is-tls">What is TLS?</h1>
+
+<p>TLS, or Transport Layer Security, is an encryption and authentication protocol that’s designed to keep your data safe when browsing. It’s the S in HTTPS, FTPS, and one of the S-es in SMTPS. It’s what allows the padlock in the browser to padlock. The TLS protocol natively works with anything that runs on the TCP protocol. This is why you see TLS all over the place!</p>
+
+<p>A TLS session is established right after the TCP connection is established, and before any application-protocol level (Read, HTTP, FTP, etc) shenanigans start. This ensures that anything that happens in the application layer is automatically encrypted from the beginning. This session establishment happens with a process called a TLS Handshake.</p>
+
+<p>We won’t delve too deep into TLS settings itself. Instead, the rest of this post will go through the TLS handshake, and try to simulate it manually using OpenSSL, so we can get a <em>feel</em> of what it actually does. I hope you find this helpful!</p>
+
+<p><strong>Aside:</strong></p>
+
+<p>I will be using RSA throughout this article to refer to the concept of asymmetric-key based encryption protocols in general, and AES to refer to the concept of symmetric key based encryption protocols. Is is 100% possible to switch out both these in TLS. For example, you may use a different key exchange algorithm. For example, you can use <code class="language-plaintext highlighter-rouge">tls_ecdhe_ecdsa_with_chacha20_poly1305_sha256</code> - which uses the Elliptic Curve Diffie Hellman key exchange (<code class="language-plaintext highlighter-rouge">ecdhe</code>) instead of RSA or standard DH , with the Elliptic Curve Digital Signature Algorithm (<code class="language-plaintext highlighter-rouge">ecdsa</code>) instead of RSA, and ChaCha20-Poly1305 (<code class="language-plaintext highlighter-rouge">chacha20_poly1305</code>) instead of RSA.</p>
+
+<h2 id="side-quest-why-do-we-need-to-make-an-aes-based-tunnel">Side Quest: Why do we need to make an AES based tunnel?</h2>
+
+<p>If you wonder why TLS uses RSA for digital signatures, but then uses that to make an AES based tunnel instead of just using the RSA algorithm itself for the tunnel, you’re not alone!</p>
+
+<p>A cursory browse of this question may lead you to believe that it’s because RSA is slower, meant to be used on fixed or small sizes of data, or that it adds unnecessary overhead. If you drill a bit deeper into RSA vs AES, you may even find that using RSA in block cipher mode is nebulously “insecure.” Scary! Even if we as our lord and saviour ChatGPT, it answers thusly:
+<img src="/assets/img/posts/2024-01-14-a-practical-tls-handshake-walkthrough/chatgpt-tls-rsa-aes.png" alt="ChatGPT's Answer" /></p>
+
+<p>But Beware! All is not as it seems!</p>
+
+<p>The simplest reason why you can’t use RSA to encrypt the connection directly is straightforward, almost <em>annoyingly</em> so: RSA is asymmetric, so you can only encrypt data from the client to the server! Anything the server sends back to the client will be public knowledge. Not exactly secure now, is it?</p>
+
+<p>The asymmetric part of TLS is not for encryption, but for the client to verify that it is actually talking to the correct server. For example, the Diffie Hellman key exchange does <strong>not</strong> rely on a private channel to create the shared symmetric key. You can perform DH by literally shouting out the values to each other, and no one else will be able to “break” or listen in to your secrets. When you’re shouting, however, you can see the person shouting back, you can listen to the intonation of their voice, and confirm that it is the person you actually want to talk with. The RSA in TLS ensures the same thing.</p>
+
+<p>In theory, though, you could construct a Mutual-TLS connection, where the client and server authenticate with each other using an extension of the below TLS handshake. In this case, the server can use the client public key to encrypt messages to the client, and the client can use the server certificates to encrypt data to the client. Why do we not do this? The <em>simplest</em> reason is that mTLS is usually not used between clients and servers, as setting up mTLS requires a lot of work on the client end. When it is used, it’s usually used between services within a company, or to authenticate clients between companies where high-trust and security are needed. Wait a second… Communications between services within a company can be much more complex and numerous than between end clients and the server, so we probably want to increase the performance by using faster algorithms and algoritms that have smaller keys. Also, if we want high security, we would probably like to have Forward Secrecy by having transient secrets. Looks like ChatGPT was thinking a couple steps ahead on this one!</p>
+
+<p>In my mind, simply knowing that TLS uses AES for encryption due to performance, forward secrecy, etc isn’t good enough. The road that tells you how you get to that point is equally important!</p>
+
+<h1 id="setting-up-the-lab-environment">Setting up the Lab Environment</h1>
+<p>The lab environment is pretty simple for now:</p>
+<ul>
+  <li>A folder each for the certificate authority, the server, and the client</li>
+  <li>OpenSSL CLI installed</li>
+  <li><code class="language-plaintext highlighter-rouge">bash/zsh</code> environment</li>
+</ul>
+
+<p>Some conventions I will follow are:</p>
+<ul>
+  <li>Whenever a <code class="language-plaintext highlighter-rouge">#Lab</code> codeblock is reached, the assumption is that you are starting at the root of the lab.</li>
+  <li>Files that end in <code class="language-plaintext highlighter-rouge">.pem</code> are public</li>
+  <li>Files that end in <code class="language-plaintext highlighter-rouge">.key</code> are private</li>
+  <li>Files that end in <code class="language-plaintext highlighter-rouge">.bin</code> are binary, and are also private</li>
+</ul>
+
+<p>Feel free to set this up within a Docker container, if you need to!</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab</span>
+<span class="nb">mkdir </span>ca server client
+</code></pre></div></div>
+
+<h1 id="the-tls-workflow">The TLS Workflow</h1>
+
+<h2 id="prelude-setting-up-the-server">Prelude: Setting Up The Server</h2>
+
+<p>Before a client connects to the server, we need to actually set up the server! Now, our server is pretty magical, in that it will be driven by shell commands, such as <code class="language-plaintext highlighter-rouge">cp</code> to send data from the server to the client. Since we’re talking about TLS though, we do need to generate a certificate and get it signed by a CA.</p>
+
+<h3 id="the-certificate-authority">The Certificate Authority</h3>
+
+<p>Generating the CA is pretty simple - we just make a private key and certificate pair.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab, CA</span>
+<span class="nb">cd </span>ca
+
+<span class="c"># Generate the private key for the CA</span>
+openssl genrsa <span class="nt">-des3</span> <span class="nt">-out</span> ca.key 2048 <span class="c"># using password "password", since we are super secure</span>
+
+<span class="c"># Generate the CA certificate</span>
+openssl req <span class="nt">-x509</span> <span class="nt">-new</span> <span class="nt">-nodes</span> <span class="nt">-key</span> ca.key <span class="nt">-sha256</span> <span class="nt">-days</span> 1825 <span class="nt">-out</span> cacert.pem
+
+</code></pre></div></div>
+
+<h3 id="generating-a-server-certificate">Generating a server certificate</h3>
+
+<p>The server needs to generate its own private key, and get it signed by the CA. To do this, it generates a <code class="language-plaintext highlighter-rouge">Certificate Signing Request</code> (CSR) and some extension data with (importantly) the <code class="language-plaintext highlighter-rouge">digitalSignature</code> attribute, some extra subject names (SANs), etc, and sends it to the CA. The CA verifies that the server is legit, that it does indeed control the DNSes that the server says it owns, and generates a signed certificate for the server and sends it back.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab</span>
+
+<span class="c"># Server</span>
+<span class="nb">cd </span>server
+
+<span class="c"># Generate the private key</span>
+openssl genrsa <span class="nt">-out</span> server.key 2048
+
+<span class="c"># generate a Certificate Signing Request (CSR)</span>
+openssl req <span class="nt">-new</span> <span class="nt">-key</span> server.key <span class="nt">-out</span> csr.pem <span class="nt">-sha256</span>
+<span class="c"># generate extension file</span>
+<span class="nb">cat</span> <span class="o">&gt;</span> extension.txt <span class="o">&lt;&lt;</span><span class="no">EOF</span><span class="sh">
+authorityKeyIdentifier=keyid,issuer
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @sans
+[sans]
+DNS.1 = vaishnavsm.com
+DNS.2 = www.vaishnavsm.com
+DNS.3 = *.vaishnavsm.com
+</span><span class="no">EOF
+
+</span><span class="c"># send the CSR to the CA</span>
+<span class="nb">cp </span>csr.pem extension.txt ../ca/
+
+<span class="c"># CA</span>
+<span class="nb">cd</span> ../ca
+
+<span class="c"># view the CSR and verify that everything is ok</span>
+openssl req <span class="nt">-text</span> <span class="nt">-noout</span> <span class="nt">-verify</span> <span class="nt">-in</span> csr.pem
+
+<span class="c"># Create signed certificate</span>
+openssl x509 <span class="nt">-req</span> <span class="nt">-in</span> csr.pem <span class="nt">-CA</span> cacert.pem <span class="nt">-CAkey</span> ca.key <span class="nt">-CAcreateserial</span> <span class="nt">-out</span> cert.pem <span class="nt">-days</span> 825 <span class="nt">-sha256</span> <span class="nt">-extfile</span> extension.txt
+
+<span class="c"># View certificate</span>
+openssl x509 <span class="nt">-text</span> <span class="nt">-noout</span> <span class="nt">-in</span> cert.pem
+
+<span class="c"># Send certificate back to server</span>
+<span class="nb">cp </span>cert.pem ../server
+</code></pre></div></div>
+
+<h2 id="creating-the-connection">Creating The Connection</h2>
+<h3 id="the-tls-12-handshake">The TLS (1.2) Handshake</h3>
+
+<p>The TLS handshake is the process through which two parties negotiate the encrypted TLS tunnel. It goes:</p>
+
+<h4 id="1-client-hello">1. Client Hello</h4>
+
+<p>The client sends a message to the server, indicating that it wants to establish the TLS connection.
+This includes:</p>
+<ul>
+  <li>Information about the highest TLS version the client supports (<code class="language-plaintext highlighter-rouge">client_version</code>).</li>
+  <li>The current GMT UNIX timestamp (<code class="language-plaintext highlighter-rouge">gmt_unix_time</code>)</li>
+  <li>28 cryptographically random bytes (<code class="language-plaintext highlighter-rouge">random_bytes</code>). I used <code class="language-plaintext highlighter-rouge">openssl rand -hex 28</code> to generate the random bytes.</li>
+  <li>The session id, if a previous session id is to be continued (<code class="language-plaintext highlighter-rouge">session_id</code>). This is empty as we want to negotiate a new connection</li>
+  <li>The cipher suites that the client supports (<code class="language-plaintext highlighter-rouge">cipher_suites</code>). We specify <code class="language-plaintext highlighter-rouge">{ 0x00,0x6B }</code>, which is the code for <code class="language-plaintext highlighter-rouge">TLS_DHE_RSA_WITH_AES_256_CBC_SHA256</code></li>
+  <li>The compression methods to use (<code class="language-plaintext highlighter-rouge">compression_methods</code>). We specify <code class="language-plaintext highlighter-rouge">0</code>, which is the <code class="language-plaintext highlighter-rouge">NULL</code> compression method.</li>
+</ul>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Client to Server: </span>
+<span class="na">msg_type</span><span class="pi">:</span> <span class="s">ClientHello</span>
+<span class="na">length</span><span class="pi">:</span> <span class="s">&lt;message size&gt;</span>
+<span class="na">body</span><span class="pi">:</span>
+    <span class="na">client_version</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">major</span><span class="pi">:</span> <span class="nv">3</span><span class="pi">,</span> <span class="nv">minor</span><span class="pi">:</span> <span class="nv">3</span> <span class="pi">}</span>
+    <span class="na">random</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">gmt_unix_time</span><span class="pi">:</span> <span class="nv">1705212000</span><span class="pi">,</span> <span class="nv">random_bytes</span><span class="pi">:</span> <span class="pi">[</span> <span class="nv">b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6</span> <span class="pi">]</span> <span class="pi">}</span>
+    <span class="na">session_id</span><span class="pi">:</span> <span class="s">&lt;empty&gt;</span>
+    <span class="na">cipher_suites</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">0x00</span><span class="pi">,</span><span class="nv">0x6B</span> <span class="pi">}</span>
+    <span class="na">compression_methods</span><span class="pi">:</span> <span class="m">0</span>
+</code></pre></div></div>
+
+<p><strong>Aside:</strong></p>
+
+<p>Why is the version <code class="language-plaintext highlighter-rouge">{ major: 3, minor: 3 }</code> if we are talking about TLS 1.2?</p>
+
+<p>TLS 1.0 was considered a minor revision of SSL 3.0 (which was <code class="language-plaintext highlighter-rouge">major: 3, minor: 0</code>). 
+So, TLS 1.0 is <code class="language-plaintext highlighter-rouge">major: 3, minor: 1</code>, and the count continues from there.</p>
+
+<h4 id="2-server-hello">2. Server Hello</h4>
+
+<p>The server responds with its own hello, making choices from the options the client has provided:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">server_version</code> contains the highest TLS version compatible by both the client and the server</li>
+  <li><code class="language-plaintext highlighter-rouge">random</code> contains the servers own set of random bytes and timestamp.  I used <code class="language-plaintext highlighter-rouge">openssl rand -hex 28</code> to generate the random bytes.</li>
+  <li><code class="language-plaintext highlighter-rouge">session_id</code> is empty, telling the client that the session will not be cached. TLS session caching is a topic for another time.</li>
+  <li><code class="language-plaintext highlighter-rouge">cipher_suite</code> contains the cipher suite that has been selected. Since the client only gave one option, and it’s an option the server supports, it selects this and sends it back.</li>
+  <li><code class="language-plaintext highlighter-rouge">compression_method</code> contains the compression method selected.</li>
+</ul>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Server to Client</span>
+<span class="na">msg_type</span><span class="pi">:</span> <span class="s">ServerHello</span>
+<span class="na">length</span><span class="pi">:</span> <span class="s">&lt;message size&gt;</span>
+<span class="na">body</span><span class="pi">:</span>
+    <span class="na">server_version</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">major</span><span class="pi">:</span> <span class="nv">3</span><span class="pi">,</span> <span class="nv">minor</span><span class="pi">:</span> <span class="nv">3</span> <span class="pi">}</span> 
+    <span class="na">random</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">gmt_unix_time</span><span class="pi">:</span> <span class="nv">1705212010</span><span class="pi">,</span> <span class="nv">random_bytes</span><span class="pi">:</span> <span class="pi">[</span> <span class="nv">c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e</span> <span class="pi">]</span> <span class="pi">}</span>
+    <span class="na">session_id</span><span class="pi">:</span> <span class="s">&lt;empty&gt;</span>
+    <span class="na">cipher_suite</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">0x00</span><span class="pi">,</span><span class="nv">0x6B</span> <span class="pi">}</span> 
+    <span class="na">compression_method</span><span class="pi">:</span> <span class="m">0</span>
+</code></pre></div></div>
+
+<h4 id="3-server-certificate">3. Server Certificate</h4>
+
+<p>Immediately after the Server Hello, the server sends its certificate to the client.
+The certificate is sent as an x.509v3 certificate. We simulate this in the lab using <code class="language-plaintext highlighter-rouge">cp</code>.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Server to Client</span>
+<span class="na">msg_type</span><span class="pi">:</span> <span class="s">Certificate</span>
+<span class="na">length</span><span class="pi">:</span> <span class="s">&lt;message length&gt;</span>
+<span class="na">body</span><span class="pi">:</span>
+    <span class="na">certificate_list</span><span class="pi">:</span> <span class="s">&lt;certificate chain obtained after signing&gt;</span>
+</code></pre></div></div>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab Action</span>
+<span class="c"># This is the data sent via `certificate_list` above</span>
+<span class="nb">cp </span>server/cert.pem client/cert.pem
+</code></pre></div></div>
+
+<h4 id="4-server-key-exchange-message">4. Server Key Exchange Message</h4>
+
+<p>Since Diffie Hellman Ephemeral (DHE) requires parameters to be sent over what is in the certificate, the server sends this next.</p>
+
+<p>In the lab, we generate the DHE parameters using openssl, as shown below. The server generates both the public prime and generator values for DH, and also its own private prime and the corresponding public key using the generated prime and generator.</p>
+
+<p>The message also includes a signed hash. This signed hash is what prevents an attacker from simply serving you the (public) certificate of the server and pretending to be the server, as it’s impossible to digitally sign data without the private key. Note that until this step, nothing has been digitally signed by the server! This will occur at different points during the key exchange step, but the server will either send some digitally signed data to the client, or the client will send some encrypted data to the server to prevent this attack. The signed value contains the full random sent by both the client and server in the corresponding Hellos (32 bytes = 4 byte timestamp + 28 random bytes each), appended with the bytes in the params struct. The random bytes prevent replay attacks. Note that the params struct has variable sized values for the DH parameters, so the data sent to the hash will be <code class="language-plaintext highlighter-rouge">random bytes + size of dh_p (2 bytes) + raw bytes of dh_p + size of dh_g (2 bytes) + raw bytes of dh_g + size of dh_Ys + raw bytes of dh_Ys</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab, Server</span>
+<span class="nb">cd </span>server
+<span class="c"># this can take some time!</span>
+openssl dhparam <span class="nt">-out</span> dhparam.pem 2048
+
+<span class="c"># view the parameters</span>
+<span class="c"># these are the prime and generator values,</span>
+<span class="c"># which will be common between the server and client</span>
+<span class="c"># and the server sends this to the client to use</span>
+openssl dhparam <span class="nt">-in</span> dhparam.pem <span class="nt">-text</span> <span class="nt">-noout</span>
+
+<span class="c"># generate the private key for the server</span>
+openssl genpkey <span class="nt">-paramfile</span> dhparam.pem <span class="nt">-out</span> dhserver.key
+
+<span class="c"># get the public (g^(Ys) mod P, with g and P as given above) value for the server</span>
+openssl pkey <span class="nt">-in</span> dhserver.key <span class="nt">-pubout</span> <span class="nt">-out</span> dhserver.pem
+
+<span class="c"># view the parameters</span>
+openssl pkey <span class="nt">-in</span> dhserver.key <span class="nt">-text</span> <span class="nt">-noout</span>
+
+<span class="c"># simulate send of parameters and public key to the server</span>
+<span class="c"># as done in `params` below</span>
+<span class="nb">cp </span>dhparam.pem ../client
+<span class="nb">cp </span>dhserver.pem ../client
+</code></pre></div></div>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Server to Client</span>
+<span class="na">msg_type</span><span class="pi">:</span> <span class="s">ServerKeyExchange</span>
+<span class="na">length</span><span class="pi">:</span> <span class="s">&lt;message length&gt;</span>
+<span class="na">body</span><span class="pi">:</span>
+    <span class="na">params</span><span class="pi">:</span>
+        <span class="na">dh_p</span><span class="pi">:</span> <span class="s">&lt;prime number value from dhparam.pem in lab&gt;</span>
+        <span class="na">dh_g</span><span class="pi">:</span> <span class="s">&lt;generator value from dhparam.pem in lab, probably 2&gt;</span>
+        <span class="na">dh_Ys</span><span class="pi">:</span> <span class="s">&lt;public key from dhserver.pem in lab&gt;</span>
+    <span class="na">signed_params</span><span class="pi">:</span>
+        <span class="na">algorithm</span><span class="pi">:</span> 
+            <span class="na">hash</span><span class="pi">:</span> <span class="m">4</span> <span class="c1"># sha256</span>
+            <span class="na">signature</span><span class="pi">:</span> <span class="m">1</span> <span class="c1"># rsa</span>
+        <span class="na">signature</span><span class="pi">:</span> <span class="s">RSA_SIGN(SHA256(client_random+server_random+params))</span>
+</code></pre></div></div>
+
+<p><strong>Aside:</strong></p>
+
+<p>What is the difference between the cipher suites with <code class="language-plaintext highlighter-rouge">DH</code> and <code class="language-plaintext highlighter-rouge">DHE</code>?</p>
+
+<p><code class="language-plaintext highlighter-rouge">DH</code> is (implicit) Diffie Hellman, and <code class="language-plaintext highlighter-rouge">DHE</code> is Diffie Hellman Ephemeral. The difference is that in <code class="language-plaintext highlighter-rouge">DH</code>, the public key of the server itself is a Diffie Hellman public key, that is then signed by the CA. This means that if you use <code class="language-plaintext highlighter-rouge">DH</code>, then every time the same keypair is used by the client, the shared secret will be the same. On the other hand, in <code class="language-plaintext highlighter-rouge">DHE</code>, the server’s public key is an RSA key and has nothing to do with the Diffie Hellman params. In practice, the Diffie Hellman parameters (Prime and Generator, <code class="language-plaintext highlighter-rouge">dh_p</code> and <code class="language-plaintext highlighter-rouge">dh_g</code> above) are generated in advance and given to the server (and is often not rotated at all!), and the server generates transient key-pairs on the server side (the private key and <code class="language-plaintext highlighter-rouge">dh_Ys</code> above), which is then sent over while negotiation.</p>
+
+<p>Security wise, <code class="language-plaintext highlighter-rouge">DH</code> does not offer forward secrecy, while <code class="language-plaintext highlighter-rouge">DHE</code> does. Please see the Side Quest after this section to learn more!</p>
+
+<h4 id="5-server-hello-done">5. Server Hello Done</h4>
+
+<p>The server says it’s done with its turn.</p>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Server to Client</span>
+<span class="na">msg_type</span><span class="pi">:</span> <span class="s">ServerHelloDone</span>
+<span class="na">length</span><span class="pi">:</span> <span class="s">&lt;message length&gt;</span>
+</code></pre></div></div>
+
+<h4 id="6-client-verifies-certificate">6. Client Verifies Certificate</h4>
+
+<p>The client checks the certificate to see that it matches the domain the URL is coming from, that it is currently valid, and that it is signed by a CA that it trusts.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab, Client</span>
+<span class="nb">cd </span>client
+
+<span class="c"># get the CA certificate</span>
+<span class="nb">cp</span> ../ca/cacert.pem
+
+<span class="c"># verify that the cert is trusted by the ca</span>
+openssl verify <span class="nt">-verbose</span> <span class="nt">-CAfile</span> cacert.pem  cert.pem
+
+<span class="c"># verify that the name matches the SAN on the cert (manually)</span>
+openssl x509 <span class="nt">-text</span> <span class="nt">-noout</span> <span class="nt">-in</span> cert.pem
+</code></pre></div></div>
+
+<h4 id="7-client-computes-master-secret">7. Client Computes Master secret</h4>
+
+<p>Since the client now trusts the server, it goes ahead and derives the master secret. For this, it generates its own DH keys, and uses the prime and generator values supplied by the server to negotiate a shared secret (the DH pre-master secret). Note that to do this, you need access to all the public data which the server shared, but also the private key on the client. This is what keeps the secret… secret!</p>
+
+<p>Explaining how the master secret is derived from the pre-master secret (the  value negotiated with DH) is a bit too involved to be added here, but it is pretty simple math, described succinctly in the TLS RFC in the <a href="https://www.rfc-editor.org/rfc/rfc5246#section-8.1">Computing the Master Secret</a> section, with the PRF defined in <a href="https://www.rfc-editor.org/rfc/rfc5246#section-5">Section 5</a></p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab, Client</span>
+<span class="nb">cd </span>client
+
+<span class="c"># client has received dhparam.pem above</span>
+<span class="c"># generate the client private</span>
+openssl genpkey <span class="nt">-paramfile</span> dhparam.pem <span class="nt">-out</span> dhclient.key
+<span class="c"># and public</span>
+openssl pkey <span class="nt">-in</span> dhserver.key <span class="nt">-pubout</span> <span class="nt">-out</span> dhserver.pem
+
+<span class="c"># take a look</span>
+openssl pkey <span class="nt">-in</span> dhclient.key <span class="nt">-text</span> <span class="nt">-noout</span>
+
+<span class="c"># Generate shared secret (pre-master secret)</span>
+openssl pkeyutl <span class="nt">-derive</span> <span class="nt">-inkey</span> dhclient.key <span class="nt">-peerkey</span> dhserver.pem <span class="nt">-out</span> pre_master.bin
+
+<span class="c"># Derive master secret from pre-master secret</span>
+<span class="c"># Random values from hellos</span>
+<span class="nv">CLIENT_TS</span><span class="o">=</span>1705212000
+<span class="nv">CLIENT_RANDOM</span><span class="o">=</span>b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
+<span class="nv">SERVER_TS</span><span class="o">=</span>1705212010
+<span class="nv">SERVER_RANDOM</span><span class="o">=</span>c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
+
+<span class="nv">PRF_SECRET_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">cat </span>pre_master.bin | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span><span class="si">)</span>
+<span class="nv">PRF_SEED_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">printf</span> <span class="s1">'%s%x%s%x%s'</span> <span class="s2">"</span><span class="si">$(</span><span class="nb">echo</span> <span class="s2">"master secret"</span> | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span><span class="si">)</span><span class="s2">"</span> <span class="nv">$CLIENT_TS</span> <span class="nv">$CLIENT_RANDOM</span> <span class="nv">$SERVER_TS</span> <span class="nv">$SERVER_RANDOM</span><span class="si">)</span>
+openssl pkeyutl <span class="nt">-kdf</span> TLS1-PRF <span class="nt">-kdflen</span> 48 <span class="nt">-pkeyopt</span> md:SHA256 <span class="nt">-pkeyopt</span> <span class="s2">"hexsecret:</span><span class="nv">$PRF_SECRET_HEX</span><span class="s2">"</span> <span class="nt">-pkeyopt</span> <span class="s2">"hexseed:</span><span class="nv">$PRF_SEED_HEX</span><span class="s2">"</span> <span class="nt">-out</span> master_secret.bin
+
+<span class="c"># View the master secret</span>
+xxd master_secret.bin
+</code></pre></div></div>
+
+<p><strong>Aside:</strong></p>
+
+<p>Why do we not simply use the secret derived from DH (what is called the “pre-master secret” above) as the master secret?</p>
+
+<p>This is to abstract away the key exchange part of TLS from the encryption part of TLS.</p>
+
+<p>The idea is that the output of the key exchange step is always 48 bytes of data that is guaranteed to be the same shared secret between client and server. This way, the key exchange method itself can pass any data to the “pre-master to master secret conversion” step, and the output is standardized to the encryption step. The master secret derivation acts as the “API” between these steps.</p>
+
+<h4 id="8-client-key-exchange-message">8. Client Key Exchange Message</h4>
+
+<p>The client proceeds to send back the information about its public DH parameter to the server.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">msg_type</span><span class="pi">:</span> <span class="s">ClientKeyExchange</span>
+<span class="na">length</span><span class="pi">:</span> <span class="s">&lt;message_length&gt;</span>
+<span class="na">body</span><span class="pi">:</span>
+    <span class="na">exchange_keys</span><span class="pi">:</span>
+        <span class="na">dh_public</span><span class="pi">:</span> <span class="s">&lt;public key from dhclient.pem&gt;</span>
+</code></pre></div></div>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab, Client</span>
+<span class="nb">cd </span>client
+<span class="nb">cp </span>dhclient.pem ../server
+</code></pre></div></div>
+
+<h4 id="9-client-change-cipher-spec">9. Client Change Cipher Spec</h4>
+
+<p>The client now sends a <code class="language-plaintext highlighter-rouge">ChangeCipherSpec</code> message, which is a single byte message which just says that everything beyond this will use the negotiated cipher.
+This is technically an entirely different type of message than a TLS Handshake message (ie, it does not fit in the <code class="language-plaintext highlighter-rouge">Handshake</code> struct and does not have an entry in <code class="language-plaintext highlighter-rouge">HandshakeType</code>), even though it is conceptually part of the “TLS Handshake.”</p>
+
+<p>This is because of how TLS transmits data.</p>
+
+<p>SSL sends <code class="language-plaintext highlighter-rouge">messages</code> that are encoded over <code class="language-plaintext highlighter-rouge">records</code>. Several <code class="language-plaintext highlighter-rouge">messages</code> of the same type can be sent in the same <code class="language-plaintext highlighter-rouge">record</code>. For example, several <code class="language-plaintext highlighter-rouge">Handshake</code> messages can be sent in the same <code class="language-plaintext highlighter-rouge">record</code>. However, a <code class="language-plaintext highlighter-rouge">ChangeCipherSpec</code> message modifies the way the following messages are encoded! So, TLS forces a <code class="language-plaintext highlighter-rouge">ChangeCipherSpec</code> message into its own single-message record to prevent confusion over where the changed cipher spec takes effect from.</p>
+
+<h4 id="10-client-finished">10. Client Finished</h4>
+
+<p>Finally (for the client), the client sends a Finished message. 
+Note that this will now be encrypted with AES, as we have negotiated!
+The <code class="language-plaintext highlighter-rouge">handshake_messages</code> used in the <code class="language-plaintext highlighter-rouge">verify_data</code> is a concatenation of all the handshake messages received so far. The exact implementation isn’t super important here, just know that the server can also construct this and verify that the data is correct.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">msg_type</span><span class="pi">:</span> <span class="s">Finished</span>
+<span class="na">length</span><span class="pi">:</span> <span class="s">&lt;message length&gt;</span>
+<span class="na">body</span><span class="pi">:</span>
+    <span class="na">verify_data</span><span class="pi">:</span> <span class="s">PRF(master_secret, "client finished", Hash(handshake_messages))</span>
+</code></pre></div></div>
+
+<h4 id="11-server-computes-master-secret">11. Server Computes Master secret</h4>
+
+<p>The server, having now received the public DH parameters of the client, has everything it needs to compute the shared secret itself.
+Note that we’re using the private secret of the server, and the public parameter of the client!</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab, Server</span>
+<span class="nb">cd </span>server
+
+<span class="c"># Generate shared secret (pre-master secret)</span>
+<span class="c"># note that we are using the server secret and the client public now</span>
+<span class="c"># this should be the same as the client!</span>
+openssl pkeyutl <span class="nt">-derive</span> <span class="nt">-inkey</span> dhserver.key <span class="nt">-peerkey</span> dhclient.pem <span class="nt">-out</span> pre_master.bin
+
+<span class="c"># Derive master secret from pre-master secret</span>
+<span class="c"># Since the pre-master secret will be the same for the client and server,</span>
+<span class="c"># and all the other inputs below are also the same,</span>
+<span class="c"># the resulting master will be the same as well</span>
+<span class="c"># Random values from hellos</span>
+<span class="nv">CLIENT_TS</span><span class="o">=</span>1705212000
+<span class="nv">CLIENT_RANDOM</span><span class="o">=</span>b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
+<span class="nv">SERVER_TS</span><span class="o">=</span>1705212010
+<span class="nv">SERVER_RANDOM</span><span class="o">=</span>c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
+
+<span class="nv">PRF_SECRET_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">cat </span>pre_master.bin | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span><span class="si">)</span>
+<span class="nv">PRF_SEED_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">printf</span> <span class="s1">'%s%x%s%x%s'</span> <span class="s2">"</span><span class="si">$(</span><span class="nb">echo</span> <span class="s2">"master secret"</span> | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span><span class="si">)</span><span class="s2">"</span> <span class="nv">$CLIENT_TS</span> <span class="nv">$CLIENT_RANDOM</span> <span class="nv">$SERVER_TS</span> <span class="nv">$SERVER_RANDOM</span><span class="si">)</span>
+openssl pkeyutl <span class="nt">-kdf</span> TLS1-PRF <span class="nt">-kdflen</span> 48 <span class="nt">-pkeyopt</span> md:SHA256 <span class="nt">-pkeyopt</span> <span class="s2">"hexsecret:</span><span class="nv">$PRF_SECRET_HEX</span><span class="s2">"</span> <span class="nt">-pkeyopt</span> <span class="s2">"hexseed:</span><span class="nv">$PRF_SEED_HEX</span><span class="s2">"</span> <span class="nt">-out</span> master_secret.bin
+
+<span class="c"># View the master secret</span>
+<span class="c"># this should be the same as the client!</span>
+xxd master_secret.bin
+</code></pre></div></div>
+
+<h4 id="12-server-change-cipher-spec-and-finished">12. Server Change Cipher Spec and Finished</h4>
+
+<p>Similar to the client <code class="language-plaintext highlighter-rouge">ChangeCipherSpec</code> and <code class="language-plaintext highlighter-rouge">Finished</code>, the server also sends the same data.
+Note that the label in <code class="language-plaintext highlighter-rouge">verify_data</code> has changed.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">msg_type</span><span class="pi">:</span> <span class="s">Finished</span>
+<span class="na">length</span><span class="pi">:</span> <span class="s">&lt;message length&gt;</span>
+<span class="na">body</span><span class="pi">:</span>
+    <span class="na">verify_data</span><span class="pi">:</span> <span class="s">PRF(master_secret, "server finished", Hash(handshake_messages))</span>
+</code></pre></div></div>
+
+<p>And voila, you have a TCP connection encrypted with AES 256!</p>
+
+<h3 id="side-quest-why-not-just-use-rsa-key-exchange">Side Quest: Why not just use RSA Key Exchange?</h3>
+<p>Let me define terms here first:</p>
+
+<p>The goal of the Key Exchange step in TLS is to get a master secret in a standardized format. The idea is that this standardized master secret can be used as the seeding secret in whatever encryption algorithm we use later, no matter what you use to arrive at the master secret. You will usually hear Diffie Hellman (or an Elliptic Curve variant) being used for this.</p>
+
+<p>RSA is generally used as a signature in TLS - to prove that the data you’re sending does indeed come from you.
+However, you can <em>also</em> use RSA to send a client generated secret to the server (a “pre-master key”), using which you can derive a master secret. This is the <em>RSA Key Exchange</em>. Remember, data can only be encrypted from the client to the server before the encrypted tunnel is set up, and the key exchange is needed to set up that tunnel!</p>
+
+<p>At first, this looks really nice! It doesn’t require any overhead in computing Diffie Hellman secrets, so it is more performant and efficient. However, its drawback is that it doesn’t offer Perfect Forward Secrecy. Very mysterious name, but a very simple concept:</p>
+
+<p>Imagine I am a hacker that’s trying to get your server data. I am working very hard to break into your server. I know this will take some time, so I record all the data that is going to your server in the mean time. They are all protected by TLS, so they are useless to me right now. One day, I finally get access to your server. I steal your private keys and get ready to pwn you. But you are smart, so you detect me, you kick me out, and you immediately replace all your private keys and certificates. Aw man, all that work, all for nothing!</p>
+
+<p>Or is it? I notice that you are using the RSA key exchange mode. This means that the secret that’s used for encryption comes only from the client generated secret. I can now decrypt this on <em>all of the TLS data that I was storing in the past</em>, and read all the TLS-protected data I had stored earlier that I could not read before! If you had been using Diffie Hellman, this is not possible, since DH does not rely on a single secret to generate the master secret, it relies on <em>math</em> done between two different values, which could even be public! I’m not getting into how this works, but there are excellent explanations of DH elsewhere. For example, this video on Diffie Hellman on <a href="https://www.youtube.com/watch?v=M-0qt6tdHzk">Khan Academy Labs</a></p>
+
+<h3 id="the-tls-13-handshake">The TLS (1.3) Handshake</h3>
+
+<p>The TLS 1.3 Handshake is shorter and simpler than 1.2, basically combining several steps of TLS 1.2 together, amongst other changes.
+We won’t explore this much here, but you should be armed with the knowledge to understand it, if you must.</p>
+
+<h2 id="sending-data-over-tls">Sending data over TLS</h2>
+
+<h3 id="generating-aes-key-from-master-secret">Generating AES Key from Master Secret</h3>
+
+<p>We skipped a little step in the TLS Handshake, which is where the master secret is expanded into the keys needed for encryption and MAC.
+This is done using the same PRF function we used for deriving the master secret from the pre-master secret earlier, except we generate enough data for all our keys.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab, Client and Server</span>
+<span class="nb">cd </span>server
+<span class="c"># Key Expansion</span>
+<span class="nv">CLIENT_TS</span><span class="o">=</span>1705212000
+<span class="nv">CLIENT_RANDOM</span><span class="o">=</span>b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
+<span class="nv">SERVER_TS</span><span class="o">=</span>1705212010
+<span class="nv">SERVER_RANDOM</span><span class="o">=</span>c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
+
+<span class="nv">PRF_SECRET_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">cat </span>master_secret.bin | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span><span class="si">)</span>
+<span class="nv">PRF_SEED_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">printf</span> <span class="s1">'%s%x%s%x%s'</span> <span class="s2">"</span><span class="si">$(</span><span class="nb">echo</span> <span class="s2">"key expansion"</span> | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span><span class="si">)</span><span class="s2">"</span> <span class="nv">$CLIENT_TS</span> <span class="nv">$CLIENT_RANDOM</span> <span class="nv">$SERVER_TS</span> <span class="nv">$SERVER_RANDOM</span><span class="si">)</span>
+openssl pkeyutl <span class="nt">-kdf</span> TLS1-PRF <span class="nt">-kdflen</span> 48 <span class="nt">-pkeyopt</span> md:SHA256 <span class="nt">-pkeyopt</span> <span class="s2">"hexsecret:</span><span class="nv">$PRF_SECRET_HEX</span><span class="s2">"</span> <span class="nt">-pkeyopt</span> <span class="s2">"hexseed:</span><span class="nv">$PRF_SEED_HEX</span><span class="s2">"</span> <span class="nt">-out</span> keys_expanded.bin
+
+<span class="c"># Break the expanded keys into the required keys for AES_256_CBC_SHA_256 mode:</span>
+<span class="nb">cat </span>keys_expanded.bin | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 <span class="nt">-j</span> 0 <span class="nt">-N</span> 32 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span> <span class="o">&gt;</span> client_write_MAC_key.bin
+<span class="nb">cat </span>keys_expanded.bin | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 <span class="nt">-j</span> 32 <span class="nt">-N</span> 32 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span> <span class="o">&gt;</span> server_write_MAC_key.bin
+<span class="nb">cat </span>keys_expanded.bin | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 <span class="nt">-j</span> 64 <span class="nt">-N</span> 32 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span> <span class="o">&gt;</span> client_write_key.bin
+<span class="nb">cat </span>keys_expanded.bin | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 <span class="nt">-j</span> 96 <span class="nt">-N</span> 32 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span> <span class="o">&gt;</span> server_write_key.bin
+</code></pre></div></div>
+
+<h3 id="message-from-server-to-client">Message From Server To Client</h3>
+
+<p>Let’s say the server wants to send a client a plaintext message: <code class="language-plaintext highlighter-rouge">HELLO WORLD</code>. TLS itself does not care about the application layer protocol, and treats this text as simply a bunch of bytes.</p>
+
+<p>Each message is sent as arbitrary length <code class="language-plaintext highlighter-rouge">records</code>, which is further split into <code class="language-plaintext highlighter-rouge">fragments</code>. In our case, <code class="language-plaintext highlighter-rouge">HELLO WORLD</code> fits into one fragment:</p>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># TLSPlaintext</span>
+<span class="na">type</span><span class="pi">:</span> <span class="m">23</span> <span class="c1"># application_data</span>
+<span class="na">version</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">major</span><span class="pi">:</span> <span class="nv">3</span><span class="pi">,</span> <span class="nv">minor</span><span class="pi">:</span> <span class="nv">3</span> <span class="pi">}</span>
+<span class="na">length</span><span class="pi">:</span> <span class="m">12</span>
+<span class="na">fragment</span><span class="pi">:</span> <span class="s">HELLO WORLD</span>
+</code></pre></div></div>
+
+<p>We skip compression, because we have elected to use <code class="language-plaintext highlighter-rouge">NULL</code>. The data will look exactly the same as above, although of type <code class="language-plaintext highlighter-rouge">TLSCompressed</code>.</p>
+
+<p>We then encrypt the data. For this, we generate an IV, compute the HMAC, find the padding necessary to get the size of the message to a multiple of 16 (block size of AES256), and encrypt the data. We then send this data to the client.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># TLSCiphertext</span>
+<span class="na">type</span><span class="pi">:</span> <span class="m">23</span> <span class="c1"># application_data</span>
+<span class="na">version</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">major</span><span class="pi">:</span> <span class="nv">3</span><span class="pi">,</span> <span class="nv">minor</span><span class="pi">:</span> <span class="nv">3</span> <span class="pi">}</span>
+<span class="na">length</span><span class="pi">:</span> <span class="s">&lt;length of below fragment&gt;</span>
+<span class="na">fragment</span><span class="pi">:</span>
+    <span class="na">IV</span><span class="pi">:</span> <span class="s">454e1fe2d1880c85766c3626f2a3386b</span>
+    <span class="na">data</span><span class="pi">:</span> <span class="s">AES256 of-</span>
+        <span class="s">content</span><span class="err">:</span> <span class="s">HELLO WORLD</span>
+        <span class="s">MAC</span><span class="err">:</span> <span class="s">d1bda6d0c3273b00fa531e8424ff0f171536194e936b0d623dba19570f5035e5</span> <span class="c1"># HMAC(&lt;server mac write key&gt;, sequence_number + TLSCompressed.type + TLSCompressed.version + TLSCompressed.length + TLSCompressed.fragment)</span>
+        <span class="na">padding</span><span class="pi">:</span> <span class="s">0x05 0x05 0x05 0x05</span> <span class="c1"># this is the padding_length, repeated enough times to make the block 16 bytes</span>
+        <span class="na">padding_length</span><span class="pi">:</span> <span class="s">0x05</span>
+    <span class="c1"># data_raw: b60fbfec7c9a3acdb820eeeb52279cc5c3f321c690c833d6e4c71eba3db8b77f14ba9464c90e3bb9b3dbdae2c2c7e499af10bd2de59aaae5a40261827c7d9605aff259867cc2f38f98dc941bf836482cb85909c48227158182bc9fa3a1e3a5b6</span>
+</code></pre></div></div>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab, Server</span>
+<span class="nb">cd </span>server
+
+<span class="nv">DATA_TYPE</span><span class="o">=</span><span class="s2">"17"</span> <span class="c"># Hex of 23</span>
+<span class="nv">DATA_VERSION_MAJOR</span><span class="o">=</span><span class="s2">"03"</span> <span class="c"># Hex of 3</span>
+<span class="nv">DATA_VERSION_MINOR</span><span class="o">=</span><span class="s2">"03"</span>
+<span class="nv">CONTENT</span><span class="o">=</span><span class="s2">"HELLO WORLD"</span>
+<span class="nv">CONTENT_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="nv">$CONTENT</span><span class="s2">"</span> | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span><span class="si">)</span>
+<span class="c"># The format of this data is specified in the spec</span>
+<span class="nv">HMAC_DATA</span><span class="o">=</span><span class="s2">"0000000000000000</span><span class="nv">$DATA_TYPE$DATA_VERSION_MAJOR$DATA_VERSION_MINOR$CONTENT_HEX</span><span class="s2">"</span>
+
+<span class="c"># Compute the HMAC</span>
+<span class="nv">DATA_HMAC</span><span class="o">=</span><span class="si">$(</span><span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="nv">$HMAC_DATA</span><span class="s2">"</span> | xxd <span class="nt">-r</span> <span class="nt">-p</span> | openssl sha256 <span class="nt">-mac</span> HMAC <span class="nt">-macopt</span> <span class="s2">"hexkey:</span><span class="si">$(</span><span class="nb">cat </span>server_write_MAC_key.bin<span class="si">)</span><span class="s2">"</span> <span class="nt">-hex</span> | <span class="nb">cut</span> <span class="nt">-d</span> <span class="s1">' '</span> <span class="nt">-f</span> 2<span class="si">)</span>
+
+<span class="c"># See the HMAC value</span>
+<span class="nb">echo</span> <span class="nv">$DATA_HMAC</span>
+
+<span class="c"># Calculate Padding</span>
+<span class="c"># Divide HMAC data size by two as two hex characters form one byte of data</span>
+<span class="nv">CONTENT_LENGTH</span><span class="o">=</span><span class="k">$((</span> <span class="si">$(</span><span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="nv">$CONTENT</span><span class="s2">"</span> | <span class="nb">wc</span> <span class="nt">-c</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">' '</span><span class="si">)</span> <span class="o">+</span> <span class="o">(</span> <span class="si">$(</span><span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="nv">$DATA_HMAC</span><span class="s2">"</span> | <span class="nb">wc</span> <span class="nt">-c</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">' '</span><span class="si">)</span> <span class="o">/</span> <span class="m">2</span> <span class="o">)</span> <span class="k">))</span>
+<span class="nv">PADDING_LENGTH</span><span class="o">=</span><span class="k">$((</span><span class="m">16</span><span class="o">-(</span> <span class="nv">$CONTENT_LENGTH</span> <span class="o">%</span> <span class="m">16</span> <span class="o">)</span> <span class="k">))</span>
+<span class="nv">PADDING_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">printf</span> <span class="s1">'%0.2x'</span> <span class="nv">$PADDING_LENGTH</span><span class="si">)</span>
+<span class="nv">PADDING</span><span class="o">=</span><span class="si">$(</span><span class="nb">printf</span> <span class="s2">"</span><span class="nv">$PADDING_HEX</span><span class="s2">%.0s"</span> <span class="o">{</span>1..<span class="nv">$PADDING_LENGTH</span><span class="o">}</span><span class="si">)</span>
+
+<span class="c"># This is the data we need to encrypt</span>
+<span class="nv">ENC_CONTENT</span><span class="o">=</span><span class="s2">"</span><span class="nv">$CONTENT_HEX$DATA_HMAC$PADDING</span><span class="s2">"</span>
+
+<span class="c"># Generate the initialization vector for the CBC</span>
+<span class="nv">IV</span><span class="o">=</span><span class="si">$(</span>openssl rand <span class="nt">-hex</span> 16<span class="si">)</span>
+
+<span class="c"># Encrypt the data using the server write key</span>
+<span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="nv">$ENC_CONTENT</span><span class="s2">"</span> | openssl enc <span class="nt">-aes-256-cbc</span> <span class="nt">-nosalt</span> <span class="nt">-e</span> <span class="nt">-K</span> <span class="si">$(</span><span class="nb">cat </span>server_write_key.bin<span class="si">)</span> <span class="nt">-iv</span> <span class="nv">$IV</span> <span class="nt">-p</span> <span class="nt">-nopad</span> <span class="nt">-out</span> request.enc 
+
+<span class="c"># Send request to client</span>
+<span class="nb">cp </span>request.enc ../client
+</code></pre></div></div>
+
+<p>On the other side, we decrypt this data and decode it using the known format. Since we know where the key comes from, and the IV is given in the message itself, you should be able to figure out how to do this! 😄️</p>
+
+<p>That’s about it! Perhaps later, I can write notes about how this works with UDP and QUIC/HTTP3, but this article is long enough as-is.</p>
+
+
+<script src="https://giscus.app/client.js"
+  data-repo="vaishnavsm/vaishnavsm.github.io"
+  data-repo-id="R_kgDOLAi5YA"
+  data-category="Announcements"
+  data-category-id="DIC_kwDOLAi5YM4CcLho"
+  data-mapping="og:title"
+  data-strict="0"
+  data-reactions-enabled="1"
+  data-emit-metadata="0"
+  data-input-position="top"
+  data-theme="https://vaishnavsm.com/css/comments.css"
+  data-lang="en"
+  data-loading="lazy"
+  crossorigin="anonymous"
+  async>
+</script></div>
+      <div class="footer">
+  <hr />
+  <a href="https://github.com/vaishnavsm/vaishnavsm.github.io">Powered by Jekyll. Theme forked from parchment.</a>
+</div>
+
+    </div>
+  </body>
+</html>

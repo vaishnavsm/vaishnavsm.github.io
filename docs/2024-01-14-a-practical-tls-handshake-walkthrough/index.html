@@ -13,7 +13,7 @@
   />
   <meta name="author" content="Vaishnav Sreekanth Menon" />
 
-  <meta name="description" content="" />
+  <meta name="description" content="Manually perform each step that goes on during a TLS handshake to see what it's like" />
   <link
     href="https://fonts.googleapis.com/css?family=Inconsolata:400,700"
     rel="stylesheet"
@@ -27,12 +27,12 @@
   <!-- For Facebook -->
   <meta property="og:title" content="A Practical TLS Handshake Walkthrough" />
   <meta property="og:image" itemprop="image" content="https://vaishnavsm.com/assets/favicon.ico" />
-  <meta property="og:description" content="" />
+  <meta property="og:description" content="Manually perform each step that goes on during a TLS handshake to see what it's like" />
 
   <!-- For Twitter -->
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="A Practical TLS Handshake Walkthrough - Vaishnav Sreekanth Menon" />
-  <meta name="twitter:description" content="" />
+  <meta name="twitter:description" content="Manually perform each step that goes on during a TLS handshake to see what it's like" />
   <meta name="twitter:image" content="https://vaishnavsm.com/assets/favicon.ico" />
 </head>
 
@@ -75,13 +75,13 @@
 
 <p><strong>Aside:</strong></p>
 
-<p>I will be using RSA throughout this article to refer to the concept of asymmetric-key based encryption protocols in general, and AES to refer to the concept of symmetric key based encryption protocols. Is is 100% possible to switch out both these in TLS. For example, you may use a different key exchange algorithm. For example, you can use <code class="language-plaintext highlighter-rouge">tls_ecdhe_ecdsa_with_chacha20_poly1305_sha256</code> - which uses the Elliptic Curve Diffie Hellman key exchange (<code class="language-plaintext highlighter-rouge">ecdhe</code>) instead of RSA or standard DH , with the Elliptic Curve Digital Signature Algorithm (<code class="language-plaintext highlighter-rouge">ecdsa</code>) instead of RSA, and ChaCha20-Poly1305 (<code class="language-plaintext highlighter-rouge">chacha20_poly1305</code>) instead of RSA.</p>
+<p>I will be using RSA throughout this article to refer to the concept of asymmetric-key based encryption protocols in general, and AES to refer to the concept of symmetric key based encryption protocols. Is is 100% possible to switch out both these in TLS. You can even use a different key exchange algorithm. For example, you can use <code class="language-plaintext highlighter-rouge">tls_ecdhe_ecdsa_with_chacha20_poly1305_sha256</code> - which uses the Elliptic Curve Diffie Hellman key exchange (<code class="language-plaintext highlighter-rouge">ecdhe</code>) instead of RSA or standard DH , with the Elliptic Curve Digital Signature Algorithm (<code class="language-plaintext highlighter-rouge">ecdsa</code>) instead of RSA, and ChaCha20-Poly1305 (<code class="language-plaintext highlighter-rouge">chacha20_poly1305</code>) instead of AES.</p>
 
 <h2 id="side-quest-why-do-we-need-to-make-an-aes-based-tunnel">Side Quest: Why do we need to make an AES based tunnel?</h2>
 
 <p>If you wonder why TLS uses RSA for digital signatures, but then uses that to make an AES based tunnel instead of just using the RSA algorithm itself for the tunnel, you’re not alone!</p>
 
-<p>A cursory browse of this question may lead you to believe that it’s because RSA is slower, meant to be used on fixed or small sizes of data, or that it adds unnecessary overhead. If you drill a bit deeper into RSA vs AES, you may even find that using RSA in block cipher mode is nebulously “insecure.” Scary! Even if we as our lord and saviour ChatGPT, it answers thusly:
+<p>A cursory browse of this question may lead you to believe that it’s because RSA is slower, meant to be used on fixed or small sizes of data, or that it adds unnecessary overhead. If you drill a bit deeper into RSA vs AES, you may even find that using RSA in block cipher mode is nebulously “insecure.” Scary! Even if we ask our lord and saviour ChatGPT, it answers thusly:
 <img src="/assets/img/posts/2024-01-14-a-practical-tls-handshake-walkthrough/chatgpt-tls-rsa-aes.png" alt="ChatGPT's Answer" /></p>
 
 <p>But Beware! All is not as it seems!</p>
@@ -110,10 +110,60 @@
   <li>Files that end in <code class="language-plaintext highlighter-rouge">.bin</code> are binary, and are also private</li>
 </ul>
 
-<p>Feel free to set this up within a Docker container, if you need to!</p>
+<p>We also set up a few bash functions to make things clearer moving forward. Please note that variables defined in one block of the lab may be used in other blocks as well!
+Feel free to set this up within a Docker container, if you need to.</p>
 
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab</span>
 <span class="nb">mkdir </span>ca server client
+
+<span class="c"># Function definitions</span>
+<span class="c"># Feel free to analyse these if you want, </span>
+<span class="c"># but their implementations aren't too relevant</span>
+
+<span class="c"># converts a number to a hexadecimal representation</span>
+<span class="c"># num_to_hex $number $number_of_bytes</span>
+<span class="k">function </span>num_to_hex <span class="o">{</span>
+    <span class="nb">printf</span> <span class="s2">"%0.</span><span class="k">$((</span> <span class="m">2</span> <span class="o">*</span> <span class="nv">$2</span> <span class="k">))</span><span class="s2">x"</span> <span class="s2">"</span><span class="nv">$1</span><span class="s2">"</span>
+<span class="o">}</span>
+
+<span class="c"># counts the number of bytes in a hex string</span>
+<span class="k">function </span>hexstrlen <span class="o">{</span>
+    <span class="nb">echo</span> <span class="k">$((</span> <span class="si">$(</span><span class="nb">echo</span> <span class="s2">"</span><span class="nv">$1</span><span class="s2">"</span> | <span class="nb">wc</span> <span class="nt">-c</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">' '</span><span class="si">)</span> <span class="o">/</span> <span class="m">2</span> <span class="k">))</span>
+<span class="o">}</span>
+
+<span class="c"># formats a variable size hex string</span>
+<span class="c"># a variable size data structure has the first two bytes describing the length of the data</span>
+<span class="c"># followed by the data itself</span>
+<span class="k">function </span>format_variable_size_hex_str <span class="o">{</span>
+    <span class="nb">echo</span> <span class="s2">"</span><span class="si">$(</span>num_to_hex <span class="si">$(</span>hexstrlen <span class="nv">$1</span><span class="si">)</span> 2<span class="si">)</span><span class="nv">$1</span><span class="s2">"</span>
+<span class="o">}</span>
+
+<span class="c"># converts a hex string to bytes</span>
+<span class="k">function </span>hex_to_bytes <span class="o">{</span>
+    <span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="nv">$1</span><span class="s2">"</span> |  xxd <span class="nt">-r</span> <span class="nt">-p</span>
+<span class="o">}</span>
+
+<span class="c"># converts bytes from a file to a hex string</span>
+<span class="k">function </span>bytes_file_to_hex <span class="o">{</span>
+    <span class="nb">cat</span> <span class="nv">$1</span> | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span>
+<span class="o">}</span>
+
+<span class="c"># converts bytes from a file to a hex string</span>
+<span class="c"># bytes_file_block_to_hex $file $offset_bytes $block_size_bytes</span>
+<span class="k">function </span>bytes_file_block_to_hex <span class="o">{</span>
+    <span class="nb">cat</span> <span class="nv">$1</span> | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 <span class="nt">-j</span> <span class="nv">$2</span> <span class="nt">-N</span> <span class="nv">$3</span> | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span>
+<span class="o">}</span>
+
+<span class="c"># converts str to a hex string</span>
+<span class="k">function </span>str_to_hex <span class="o">{</span>
+    <span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="nv">$1</span><span class="s2">"</span> | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span>
+<span class="o">}</span>
+
+<span class="c"># function repeat a string a given number of times</span>
+<span class="c"># repeat_times $str $times</span>
+<span class="k">function </span>repeat_times <span class="o">{</span>
+    <span class="nb">printf</span> <span class="s2">"</span><span class="nv">$1</span><span class="s2">%.0s"</span> <span class="o">{</span>1..<span class="nv">$2</span><span class="o">}</span>
+<span class="o">}</span>
 </code></pre></div></div>
 
 <h1 id="the-tls-workflow">The TLS Workflow</h1>
@@ -130,7 +180,7 @@
 <span class="nb">cd </span>ca
 
 <span class="c"># Generate the private key for the CA</span>
-openssl genrsa <span class="nt">-des3</span> <span class="nt">-out</span> ca.key 2048 <span class="c"># using password "password", since we are super secure</span>
+openssl genrsa <span class="nt">-out</span> ca.key 2048 
 
 <span class="c"># Generate the CA certificate</span>
 openssl req <span class="nt">-x509</span> <span class="nt">-new</span> <span class="nt">-nodes</span> <span class="nt">-key</span> ca.key <span class="nt">-sha256</span> <span class="nt">-days</span> 1825 <span class="nt">-out</span> cacert.pem
@@ -151,7 +201,7 @@ openssl genrsa <span class="nt">-out</span> server.key 2048
 
 <span class="c"># generate a Certificate Signing Request (CSR)</span>
 openssl req <span class="nt">-new</span> <span class="nt">-key</span> server.key <span class="nt">-out</span> csr.pem <span class="nt">-sha256</span>
-<span class="c"># generate extension file</span>
+<span class="c"># generate extension file using HEREDOC</span>
 <span class="nb">cat</span> <span class="o">&gt;</span> extension.txt <span class="o">&lt;&lt;</span><span class="no">EOF</span><span class="sh">
 authorityKeyIdentifier=keyid,issuer
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
@@ -165,6 +215,7 @@ DNS.3 = *.vaishnavsm.com
 </span><span class="c"># send the CSR to the CA</span>
 <span class="nb">cp </span>csr.pem extension.txt ../ca/
 
+<span class="c"># ------------</span>
 <span class="c"># CA</span>
 <span class="nb">cd</span> ../ca
 
@@ -210,6 +261,15 @@ This includes:</p>
     <span class="na">compression_methods</span><span class="pi">:</span> <span class="m">0</span>
 </code></pre></div></div>
 
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab, Client</span>
+<span class="c"># We just set up the values of the randoms here - This will be used in the future</span>
+<span class="c"># Note that there are a total of 32 bytes in the random:</span>
+<span class="c"># 4 from the timestamp and 28 from the random data</span>
+<span class="nv">CLIENT_TS</span><span class="o">=</span>1705212000
+<span class="nv">CLIENT_RANDOM</span><span class="o">=</span>b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
+<span class="nv">FULL_CLIENT_RANDOM</span><span class="o">=</span><span class="s2">"</span><span class="si">$(</span>num_to_hex <span class="nv">$CLIENT_TS</span> 4<span class="si">)</span><span class="nv">$CLIENT_RANDOM</span><span class="s2">"</span>
+</code></pre></div></div>
+
 <p><strong>Aside:</strong></p>
 
 <p>Why is the version <code class="language-plaintext highlighter-rouge">{ major: 3, minor: 3 }</code> if we are talking about TLS 1.2?</p>
@@ -239,6 +299,15 @@ So, TLS 1.0 is <code class="language-plaintext highlighter-rouge">major: 3, mino
     <span class="na">compression_method</span><span class="pi">:</span> <span class="m">0</span>
 </code></pre></div></div>
 
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab, Server</span>
+<span class="c"># We just set up the values of the randoms here - This will be used in the future</span>
+<span class="c"># Note that there are a total of 32 bytes in the random:</span>
+<span class="c"># 4 from the timestamp and 28 from the random data</span>
+<span class="nv">SERVER_TS</span><span class="o">=</span>1705212010
+<span class="nv">SERVER_RANDOM</span><span class="o">=</span>c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
+<span class="nv">FULL_SERVER_RANDOM</span><span class="o">=</span><span class="s2">"</span><span class="si">$(</span>num_to_hex <span class="nv">$SERVER_TS</span> 4<span class="si">)</span><span class="nv">$SERVER_RANDOM</span><span class="s2">"</span>
+</code></pre></div></div>
+
 <h4 id="3-server-certificate">3. Server Certificate</h4>
 
 <p>Immediately after the Server Hello, the server sends its certificate to the client.
@@ -266,6 +335,7 @@ The certificate is sent as an x.509v3 certificate. We simulate this in the lab u
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab, Server</span>
 <span class="nb">cd </span>server
 <span class="c"># this can take some time!</span>
+<span class="c"># this is usually done in advance, in most real world scenarios</span>
 openssl dhparam <span class="nt">-out</span> dhparam.pem 2048
 
 <span class="c"># view the parameters</span>
@@ -282,11 +352,38 @@ openssl pkey <span class="nt">-in</span> dhserver.key <span class="nt">-pubout</
 
 <span class="c"># view the parameters</span>
 openssl pkey <span class="nt">-in</span> dhserver.key <span class="nt">-text</span> <span class="nt">-noout</span>
+<span class="c"># Outputs:</span>
+<span class="c"># DH Private-Key: (2048 bit)</span>
+<span class="c"># private-key:</span>
+<span class="c">#     54:b1:7a:fc:e0:3e:06:15:92:b1:81:f2:47:54:0f:</span>
+<span class="c">#     ...</span>
+<span class="c"># public-key:</span>
+<span class="c">#     00:b8:e9:ff:59:ba:8d:48:49:b5:00:99:d0:cc:a4:</span>
+<span class="c">#     ...</span>
+<span class="c"># P:   </span>
+<span class="c">#     00:dd:cf:3f:e8:43:db:cf:79:33:7d:27:4d:99:d3:</span>
+<span class="c">#     ...</span>
+<span class="c"># G:    2 (0x2)</span>
+
+<span class="c"># generate signature</span>
+<span class="c"># This function extracts the hex block between two lines from the above parameters</span>
+<span class="k">function </span>extract_hex_from_params_between_lines <span class="o">{</span>
+    openssl pkey <span class="nt">-in</span> dhserver.key <span class="nt">-text</span> <span class="nt">-noout</span> | <span class="nb">sed</span> <span class="nt">-n</span> <span class="s2">"/</span><span class="nv">$1</span><span class="s2">/,/</span><span class="nv">$2</span><span class="s2">/p"</span> | <span class="nb">tail</span> <span class="nt">-n</span> +2 | <span class="nb">sed</span> <span class="nt">-e</span> <span class="s1">'$ d'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">':\n '</span>
+<span class="o">}</span>
+<span class="nv">DATA_DH_P</span><span class="o">=</span><span class="si">$(</span>extract_hex_from_params_between_lines <span class="s2">"P:"</span> <span class="s2">"G:"</span><span class="si">)</span>
+<span class="nv">DATA_DH_YS</span><span class="o">=</span><span class="si">$(</span>extract_hex_from_params_between_lines <span class="s2">"public-key:"</span> <span class="s2">"P:"</span><span class="si">)</span>
+<span class="nv">DATA_DH_G</span><span class="o">=</span>2 <span class="c"># Copy this from the params yourself :)</span>
+
+<span class="c"># note: we will use this in the client too when verifying</span>
+<span class="c"># all the data here is public!</span>
+<span class="nv">DATA_TO_HASH_HEX</span><span class="o">=</span><span class="s2">"</span><span class="k">${</span><span class="nv">FULL_CLIENT_RANDOM</span><span class="k">}${</span><span class="nv">FULL_SERVER_RANDOM</span><span class="k">}</span><span class="si">$(</span>format_variable_size_hex_str <span class="nv">$DATA_DH_P</span><span class="si">)$(</span>num_to_hex <span class="nv">$DATA_DH_G</span> 1<span class="si">)$(</span>format_variable_size_hex_str <span class="nv">$DATA_DH_YS</span><span class="si">)</span><span class="s2">"</span>
+hex_to_bytes <span class="nv">$DATA_TO_HASH_HEX</span> | openssl dgst <span class="nt">-sha256</span> <span class="nt">-sign</span> server.key <span class="nt">-out</span> keyexchange.sign
 
 <span class="c"># simulate send of parameters and public key to the server</span>
 <span class="c"># as done in `params` below</span>
 <span class="nb">cp </span>dhparam.pem ../client
 <span class="nb">cp </span>dhserver.pem ../client
+<span class="nb">cp </span>keyexchange.sign ../client
 </code></pre></div></div>
 
 <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Server to Client</span>
@@ -328,13 +425,24 @@ openssl pkey <span class="nt">-in</span> dhserver.key <span class="nt">-text</sp
 <span class="nb">cd </span>client
 
 <span class="c"># get the CA certificate</span>
-<span class="nb">cp</span> ../ca/cacert.pem
+<span class="nb">cp</span> ../ca/cacert.pem ./
 
 <span class="c"># verify that the cert is trusted by the ca</span>
 openssl verify <span class="nt">-verbose</span> <span class="nt">-CAfile</span> cacert.pem  cert.pem
 
 <span class="c"># verify that the name matches the SAN on the cert (manually)</span>
 openssl x509 <span class="nt">-text</span> <span class="nt">-noout</span> <span class="nt">-in</span> cert.pem
+
+<span class="c"># extract the public key from the certificate</span>
+openssl x509 <span class="nt">-pubkey</span> <span class="nt">-in</span> cert.pem <span class="nt">-noout</span> <span class="o">&gt;</span> server.pem
+
+<span class="c"># verify the signed key exchange message</span>
+<span class="c"># this proves that it is indeed the server that is sending the data,</span>
+<span class="c"># not some man in the middle</span>
+<span class="c"># note that $DATA_TO_HASH_HEX is being reused from the server</span>
+<span class="c"># this is ok, since we can recreate it using the data sent by the server</span>
+<span class="c"># I am leaving that out here for succinctness</span>
+hex_to_bytes <span class="nv">$DATA_TO_HASH_HEX</span> | openssl dgst <span class="nt">-sha256</span> <span class="nt">-verify</span> server.pem <span class="nt">-signature</span> keyexchange.sign
 </code></pre></div></div>
 
 <h4 id="7-client-computes-master-secret">7. Client Computes Master secret</h4>
@@ -350,7 +458,7 @@ openssl x509 <span class="nt">-text</span> <span class="nt">-noout</span> <span 
 <span class="c"># generate the client private</span>
 openssl genpkey <span class="nt">-paramfile</span> dhparam.pem <span class="nt">-out</span> dhclient.key
 <span class="c"># and public</span>
-openssl pkey <span class="nt">-in</span> dhserver.key <span class="nt">-pubout</span> <span class="nt">-out</span> dhserver.pem
+openssl pkey <span class="nt">-in</span> dhclient.key <span class="nt">-pubout</span> <span class="nt">-out</span> dhclient.pem
 
 <span class="c"># take a look</span>
 openssl pkey <span class="nt">-in</span> dhclient.key <span class="nt">-text</span> <span class="nt">-noout</span>
@@ -359,14 +467,10 @@ openssl pkey <span class="nt">-in</span> dhclient.key <span class="nt">-text</sp
 openssl pkeyutl <span class="nt">-derive</span> <span class="nt">-inkey</span> dhclient.key <span class="nt">-peerkey</span> dhserver.pem <span class="nt">-out</span> pre_master.bin
 
 <span class="c"># Derive master secret from pre-master secret</span>
-<span class="c"># Random values from hellos</span>
-<span class="nv">CLIENT_TS</span><span class="o">=</span>1705212000
-<span class="nv">CLIENT_RANDOM</span><span class="o">=</span>b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
-<span class="nv">SERVER_TS</span><span class="o">=</span>1705212010
-<span class="nv">SERVER_RANDOM</span><span class="o">=</span>c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
 
-<span class="nv">PRF_SECRET_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">cat </span>pre_master.bin | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span><span class="si">)</span>
-<span class="nv">PRF_SEED_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">printf</span> <span class="s1">'%s%x%s%x%s'</span> <span class="s2">"</span><span class="si">$(</span><span class="nb">echo</span> <span class="s2">"master secret"</span> | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span><span class="si">)</span><span class="s2">"</span> <span class="nv">$CLIENT_TS</span> <span class="nv">$CLIENT_RANDOM</span> <span class="nv">$SERVER_TS</span> <span class="nv">$SERVER_RANDOM</span><span class="si">)</span>
+<span class="nv">PRF_SECRET_HEX</span><span class="o">=</span><span class="si">$(</span>bytes_file_to_hex pre_master.bin<span class="si">)</span>
+<span class="nv">PRF_SEED_HEX</span><span class="o">=</span><span class="s2">"</span><span class="si">$(</span>str_to_hex <span class="s1">'master secret'</span><span class="si">)</span><span class="k">${</span><span class="nv">FULL_CLIENT_RANDOM</span><span class="k">}${</span><span class="nv">FULL_SERVER_RANDOM</span><span class="k">}</span><span class="s2">"</span>
+
 openssl pkeyutl <span class="nt">-kdf</span> TLS1-PRF <span class="nt">-kdflen</span> 48 <span class="nt">-pkeyopt</span> md:SHA256 <span class="nt">-pkeyopt</span> <span class="s2">"hexsecret:</span><span class="nv">$PRF_SECRET_HEX</span><span class="s2">"</span> <span class="nt">-pkeyopt</span> <span class="s2">"hexseed:</span><span class="nv">$PRF_SEED_HEX</span><span class="s2">"</span> <span class="nt">-out</span> master_secret.bin
 
 <span class="c"># View the master secret</span>
@@ -435,14 +539,10 @@ openssl pkeyutl <span class="nt">-derive</span> <span class="nt">-inkey</span> d
 <span class="c"># Since the pre-master secret will be the same for the client and server,</span>
 <span class="c"># and all the other inputs below are also the same,</span>
 <span class="c"># the resulting master will be the same as well</span>
-<span class="c"># Random values from hellos</span>
-<span class="nv">CLIENT_TS</span><span class="o">=</span>1705212000
-<span class="nv">CLIENT_RANDOM</span><span class="o">=</span>b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
-<span class="nv">SERVER_TS</span><span class="o">=</span>1705212010
-<span class="nv">SERVER_RANDOM</span><span class="o">=</span>c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
 
-<span class="nv">PRF_SECRET_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">cat </span>pre_master.bin | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span><span class="si">)</span>
-<span class="nv">PRF_SEED_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">printf</span> <span class="s1">'%s%x%s%x%s'</span> <span class="s2">"</span><span class="si">$(</span><span class="nb">echo</span> <span class="s2">"master secret"</span> | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span><span class="si">)</span><span class="s2">"</span> <span class="nv">$CLIENT_TS</span> <span class="nv">$CLIENT_RANDOM</span> <span class="nv">$SERVER_TS</span> <span class="nv">$SERVER_RANDOM</span><span class="si">)</span>
+<span class="nv">PRF_SECRET_HEX</span><span class="o">=</span><span class="si">$(</span>bytes_file_to_hex pre_master.bin<span class="si">)</span>
+<span class="nv">PRF_SEED_HEX</span><span class="o">=</span><span class="s2">"</span><span class="si">$(</span>str_to_hex <span class="s1">'master secret'</span><span class="si">)</span><span class="k">${</span><span class="nv">FULL_CLIENT_RANDOM</span><span class="k">}${</span><span class="nv">FULL_SERVER_RANDOM</span><span class="k">}</span><span class="s2">"</span>
+
 openssl pkeyutl <span class="nt">-kdf</span> TLS1-PRF <span class="nt">-kdflen</span> 48 <span class="nt">-pkeyopt</span> md:SHA256 <span class="nt">-pkeyopt</span> <span class="s2">"hexsecret:</span><span class="nv">$PRF_SECRET_HEX</span><span class="s2">"</span> <span class="nt">-pkeyopt</span> <span class="s2">"hexseed:</span><span class="nv">$PRF_SEED_HEX</span><span class="s2">"</span> <span class="nt">-out</span> master_secret.bin
 
 <span class="c"># View the master secret</span>
@@ -492,20 +592,17 @@ This is done using the same PRF function we used for deriving the master secret 
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab, Client and Server</span>
 <span class="nb">cd </span>server
 <span class="c"># Key Expansion</span>
-<span class="nv">CLIENT_TS</span><span class="o">=</span>1705212000
-<span class="nv">CLIENT_RANDOM</span><span class="o">=</span>b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
-<span class="nv">SERVER_TS</span><span class="o">=</span>1705212010
-<span class="nv">SERVER_RANDOM</span><span class="o">=</span>c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
 
-<span class="nv">PRF_SECRET_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">cat </span>master_secret.bin | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span><span class="si">)</span>
-<span class="nv">PRF_SEED_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">printf</span> <span class="s1">'%s%x%s%x%s'</span> <span class="s2">"</span><span class="si">$(</span><span class="nb">echo</span> <span class="s2">"key expansion"</span> | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span><span class="si">)</span><span class="s2">"</span> <span class="nv">$CLIENT_TS</span> <span class="nv">$CLIENT_RANDOM</span> <span class="nv">$SERVER_TS</span> <span class="nv">$SERVER_RANDOM</span><span class="si">)</span>
-openssl pkeyutl <span class="nt">-kdf</span> TLS1-PRF <span class="nt">-kdflen</span> 48 <span class="nt">-pkeyopt</span> md:SHA256 <span class="nt">-pkeyopt</span> <span class="s2">"hexsecret:</span><span class="nv">$PRF_SECRET_HEX</span><span class="s2">"</span> <span class="nt">-pkeyopt</span> <span class="s2">"hexseed:</span><span class="nv">$PRF_SEED_HEX</span><span class="s2">"</span> <span class="nt">-out</span> keys_expanded.bin
+<span class="nv">PRF_SECRET_HEX</span><span class="o">=</span><span class="si">$(</span>bytes_file_to_hex master_secret.bin<span class="si">)</span>
+<span class="nv">PRF_SEED_HEX</span><span class="o">=</span><span class="s2">"</span><span class="si">$(</span>str_to_hex <span class="s1">'key expansion'</span><span class="si">)</span><span class="k">${</span><span class="nv">FULL_CLIENT_RANDOM</span><span class="k">}${</span><span class="nv">FULL_SERVER_RANDOM</span><span class="k">}</span><span class="s2">"</span>
+
+openssl pkeyutl <span class="nt">-kdf</span> TLS1-PRF <span class="nt">-kdflen</span> 128 <span class="nt">-pkeyopt</span> md:SHA256 <span class="nt">-pkeyopt</span> <span class="s2">"hexsecret:</span><span class="nv">$PRF_SECRET_HEX</span><span class="s2">"</span> <span class="nt">-pkeyopt</span> <span class="s2">"hexseed:</span><span class="nv">$PRF_SEED_HEX</span><span class="s2">"</span> <span class="nt">-out</span> keys_expanded.bin
 
 <span class="c"># Break the expanded keys into the required keys for AES_256_CBC_SHA_256 mode:</span>
-<span class="nb">cat </span>keys_expanded.bin | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 <span class="nt">-j</span> 0 <span class="nt">-N</span> 32 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span> <span class="o">&gt;</span> client_write_MAC_key.bin
-<span class="nb">cat </span>keys_expanded.bin | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 <span class="nt">-j</span> 32 <span class="nt">-N</span> 32 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span> <span class="o">&gt;</span> server_write_MAC_key.bin
-<span class="nb">cat </span>keys_expanded.bin | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 <span class="nt">-j</span> 64 <span class="nt">-N</span> 32 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span> <span class="o">&gt;</span> client_write_key.bin
-<span class="nb">cat </span>keys_expanded.bin | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 <span class="nt">-j</span> 96 <span class="nt">-N</span> 32 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span> <span class="o">&gt;</span> server_write_key.bin
+bytes_file_block_to_hex keys_expanded.bin 0 32 <span class="o">&gt;</span> client_write_MAC_key.bin
+bytes_file_block_to_hex keys_expanded.bin 32 32 <span class="o">&gt;</span> server_write_MAC_key.bin
+bytes_file_block_to_hex keys_expanded.bin 64 32 <span class="o">&gt;</span> client_write_key.bin
+bytes_file_block_to_hex keys_expanded.bin 96 32 <span class="o">&gt;</span> server_write_key.bin
 </code></pre></div></div>
 
 <h3 id="message-from-server-to-client">Message From Server To Client</h3>
@@ -541,29 +638,31 @@ openssl pkeyutl <span class="nt">-kdf</span> TLS1-PRF <span class="nt">-kdflen</
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Lab, Server</span>
 <span class="nb">cd </span>server
 
-<span class="nv">DATA_TYPE</span><span class="o">=</span><span class="s2">"17"</span> <span class="c"># Hex of 23</span>
-<span class="nv">DATA_VERSION_MAJOR</span><span class="o">=</span><span class="s2">"03"</span> <span class="c"># Hex of 3</span>
-<span class="nv">DATA_VERSION_MINOR</span><span class="o">=</span><span class="s2">"03"</span>
 <span class="nv">CONTENT</span><span class="o">=</span><span class="s2">"HELLO WORLD"</span>
-<span class="nv">CONTENT_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="nv">$CONTENT</span><span class="s2">"</span> | <span class="nb">od</span> <span class="nt">-A</span> n <span class="nt">-t</span> x1 | <span class="nb">sed</span> <span class="s1">'s/ *//g'</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">'\n'</span><span class="si">)</span>
+<span class="nv">CONTENT_HEX</span><span class="o">=</span><span class="si">$(</span>str_to_hex <span class="nv">$CONTENT</span><span class="si">)</span>
+<span class="nv">DATA_TYPE</span><span class="o">=</span><span class="si">$(</span>num_to_hex 23 1<span class="si">)</span> <span class="c"># Hex of 23</span>
+<span class="nv">DATA_VERSION_MAJOR</span><span class="o">=</span><span class="si">$(</span>num_to_hex 3 1<span class="si">)</span>
+<span class="nv">DATA_VERSION_MINOR</span><span class="o">=</span><span class="si">$(</span>num_to_hex 3 1<span class="si">)</span>
 <span class="c"># The format of this data is specified in the spec</span>
-<span class="nv">HMAC_DATA</span><span class="o">=</span><span class="s2">"0000000000000000</span><span class="nv">$DATA_TYPE$DATA_VERSION_MAJOR$DATA_VERSION_MINOR$CONTENT_HEX</span><span class="s2">"</span>
+<span class="c"># the first number is the sequence number, which is assumed to be 0. It is 64 bits/8 bytes</span>
+<span class="nv">HMAC_DATA</span><span class="o">=</span><span class="s2">"</span><span class="si">$(</span>num_to_hex 0 8<span class="si">)</span><span class="k">${</span><span class="nv">DATA_TYPE</span><span class="k">}${</span><span class="nv">DATA_VERSION_MAJOR</span><span class="k">}${</span><span class="nv">DATA_VERSION_MINOR</span><span class="k">}${</span><span class="nv">CONTENT_HEX</span><span class="k">}</span><span class="s2">"</span>
 
 <span class="c"># Compute the HMAC</span>
-<span class="nv">DATA_HMAC</span><span class="o">=</span><span class="si">$(</span><span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="nv">$HMAC_DATA</span><span class="s2">"</span> | xxd <span class="nt">-r</span> <span class="nt">-p</span> | openssl sha256 <span class="nt">-mac</span> HMAC <span class="nt">-macopt</span> <span class="s2">"hexkey:</span><span class="si">$(</span><span class="nb">cat </span>server_write_MAC_key.bin<span class="si">)</span><span class="s2">"</span> <span class="nt">-hex</span> | <span class="nb">cut</span> <span class="nt">-d</span> <span class="s1">' '</span> <span class="nt">-f</span> 2<span class="si">)</span>
+<span class="c"># we need to cut since the sha produces output with some unnecessary text</span>
+<span class="nv">DATA_HMAC</span><span class="o">=</span><span class="si">$(</span>hex_to_bytes <span class="s2">"</span><span class="nv">$HMAC_DATA</span><span class="s2">"</span> | openssl sha256 <span class="nt">-mac</span> HMAC <span class="nt">-macopt</span> <span class="s2">"hexkey:</span><span class="si">$(</span><span class="nb">cat </span>server_write_MAC_key.bin<span class="si">)</span><span class="s2">"</span> <span class="nt">-hex</span> | <span class="nb">cut</span> <span class="nt">-d</span> <span class="s1">' '</span> <span class="nt">-f</span> 2<span class="si">)</span>
 
 <span class="c"># See the HMAC value</span>
 <span class="nb">echo</span> <span class="nv">$DATA_HMAC</span>
 
 <span class="c"># Calculate Padding</span>
 <span class="c"># Divide HMAC data size by two as two hex characters form one byte of data</span>
-<span class="nv">CONTENT_LENGTH</span><span class="o">=</span><span class="k">$((</span> <span class="si">$(</span><span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="nv">$CONTENT</span><span class="s2">"</span> | <span class="nb">wc</span> <span class="nt">-c</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">' '</span><span class="si">)</span> <span class="o">+</span> <span class="o">(</span> <span class="si">$(</span><span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="nv">$DATA_HMAC</span><span class="s2">"</span> | <span class="nb">wc</span> <span class="nt">-c</span> | <span class="nb">tr</span> <span class="nt">-d</span> <span class="s1">' '</span><span class="si">)</span> <span class="o">/</span> <span class="m">2</span> <span class="o">)</span> <span class="k">))</span>
+<span class="nv">CONTENT_LENGTH</span><span class="o">=</span><span class="si">$(</span>hexstrlen <span class="s2">"</span><span class="k">${</span><span class="nv">CONTENT_HEX</span><span class="k">}${</span><span class="nv">DATA_HMAC</span><span class="k">}</span><span class="s2">"</span><span class="si">)</span>
 <span class="nv">PADDING_LENGTH</span><span class="o">=</span><span class="k">$((</span><span class="m">16</span><span class="o">-(</span> <span class="nv">$CONTENT_LENGTH</span> <span class="o">%</span> <span class="m">16</span> <span class="o">)</span> <span class="k">))</span>
-<span class="nv">PADDING_HEX</span><span class="o">=</span><span class="si">$(</span><span class="nb">printf</span> <span class="s1">'%0.2x'</span> <span class="nv">$PADDING_LENGTH</span><span class="si">)</span>
-<span class="nv">PADDING</span><span class="o">=</span><span class="si">$(</span><span class="nb">printf</span> <span class="s2">"</span><span class="nv">$PADDING_HEX</span><span class="s2">%.0s"</span> <span class="o">{</span>1..<span class="nv">$PADDING_LENGTH</span><span class="o">}</span><span class="si">)</span>
+<span class="nv">PADDING_HEX</span><span class="o">=</span><span class="si">$(</span>num_to_hex <span class="nv">$PADDING_LENGTH</span> 1<span class="si">)</span>
+<span class="nv">PADDING</span><span class="o">=</span><span class="si">$(</span>repeat_times <span class="nv">$PADDING_HEX</span> <span class="nv">$PADDING_LENGTH</span><span class="si">)</span>
 
 <span class="c"># This is the data we need to encrypt</span>
-<span class="nv">ENC_CONTENT</span><span class="o">=</span><span class="s2">"</span><span class="nv">$CONTENT_HEX$DATA_HMAC$PADDING</span><span class="s2">"</span>
+<span class="nv">ENC_CONTENT</span><span class="o">=</span><span class="s2">"</span><span class="k">${</span><span class="nv">CONTENT_HEX</span><span class="k">}${</span><span class="nv">DATA_HMAC</span><span class="k">}${</span><span class="nv">PADDING</span><span class="k">}</span><span class="s2">"</span>
 
 <span class="c"># Generate the initialization vector for the CBC</span>
 <span class="nv">IV</span><span class="o">=</span><span class="si">$(</span>openssl rand <span class="nt">-hex</span> 16<span class="si">)</span>

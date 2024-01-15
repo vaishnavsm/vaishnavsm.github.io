@@ -1,5 +1,13 @@
 # Personal Blog
 
+```bash
+# Running dev mode:
+bundle exec jekyll serve 
+
+# Generating the site:
+bundle exec jekyll build
+```
+
 ## Credits
 
 The blog is powered by [Jekyll](https://github.com/jekyll/jekyll). Our theme

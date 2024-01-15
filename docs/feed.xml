@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.1">Jekyll</generator><link href="https://vaishnavsm.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://vaishnavsm.com/" rel="alternate" type="text/html" /><updated>2024-01-14T16:37:43-06:00</updated><id>https://vaishnavsm.com/feed.xml</id><title type="html">Vaishnav Sreekanth Menon</title><author><name>Vaishnav Sreekanth Menon</name></author><entry><title type="html">A Practical TLS Handshake Walkthrough</title><link href="https://vaishnavsm.com/2024-01-14-a-practical-tls-handshake-walkthrough/" rel="alternate" type="text/html" title="A Practical TLS Handshake Walkthrough" /><published>2024-01-14T00:00:00-06:00</published><updated>2024-01-14T00:00:00-06:00</updated><id>https://vaishnavsm.com/a-practical-tls-handshake-walkthrough</id><content type="html" xml:base="https://vaishnavsm.com/2024-01-14-a-practical-tls-handshake-walkthrough/">&lt;h1 id=&quot;what-is-tls&quot;&gt;What is TLS?&lt;/h1&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.1">Jekyll</generator><link href="https://vaishnavsm.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://vaishnavsm.com/" rel="alternate" type="text/html" /><updated>2024-01-15T11:37:36-06:00</updated><id>https://vaishnavsm.com/feed.xml</id><title type="html">Vaishnav Sreekanth Menon</title><author><name>Vaishnav Sreekanth Menon</name></author><entry><title type="html">A Practical TLS Handshake Walkthrough</title><link href="https://vaishnavsm.com/2024-01-14-a-practical-tls-handshake-walkthrough/" rel="alternate" type="text/html" title="A Practical TLS Handshake Walkthrough" /><published>2024-01-14T00:00:00-06:00</published><updated>2024-01-14T00:00:00-06:00</updated><id>https://vaishnavsm.com/a-practical-tls-handshake-walkthrough</id><content type="html" xml:base="https://vaishnavsm.com/2024-01-14-a-practical-tls-handshake-walkthrough/">&lt;h1 id=&quot;what-is-tls&quot;&gt;What is TLS?&lt;/h1&gt;
 
 &lt;p&gt;TLS, or Transport Layer Security, is an encryption and authentication protocol that’s designed to keep your data safe when browsing. It’s the S in HTTPS, FTPS, and one of the S-es in SMTPS. It’s what allows the padlock in the browser to padlock. The TLS protocol natively works with anything that runs on the TCP protocol. This is why you see TLS all over the place!&lt;/p&gt;
 
@@ -8,13 +8,13 @@
 
 &lt;p&gt;&lt;strong&gt;Aside:&lt;/strong&gt;&lt;/p&gt;
 
-&lt;p&gt;I will be using RSA throughout this article to refer to the concept of asymmetric-key based encryption protocols in general, and AES to refer to the concept of symmetric key based encryption protocols. Is is 100% possible to switch out both these in TLS. For example, you may use a different key exchange algorithm. For example, you can use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tls_ecdhe_ecdsa_with_chacha20_poly1305_sha256&lt;/code&gt; - which uses the Elliptic Curve Diffie Hellman key exchange (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ecdhe&lt;/code&gt;) instead of RSA or standard DH , with the Elliptic Curve Digital Signature Algorithm (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ecdsa&lt;/code&gt;) instead of RSA, and ChaCha20-Poly1305 (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;chacha20_poly1305&lt;/code&gt;) instead of RSA.&lt;/p&gt;
+&lt;p&gt;I will be using RSA throughout this article to refer to the concept of asymmetric-key based encryption protocols in general, and AES to refer to the concept of symmetric key based encryption protocols. Is is 100% possible to switch out both these in TLS. You can even use a different key exchange algorithm. For example, you can use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tls_ecdhe_ecdsa_with_chacha20_poly1305_sha256&lt;/code&gt; - which uses the Elliptic Curve Diffie Hellman key exchange (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ecdhe&lt;/code&gt;) instead of RSA or standard DH , with the Elliptic Curve Digital Signature Algorithm (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ecdsa&lt;/code&gt;) instead of RSA, and ChaCha20-Poly1305 (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;chacha20_poly1305&lt;/code&gt;) instead of AES.&lt;/p&gt;
 
 &lt;h2 id=&quot;side-quest-why-do-we-need-to-make-an-aes-based-tunnel&quot;&gt;Side Quest: Why do we need to make an AES based tunnel?&lt;/h2&gt;
 
 &lt;p&gt;If you wonder why TLS uses RSA for digital signatures, but then uses that to make an AES based tunnel instead of just using the RSA algorithm itself for the tunnel, you’re not alone!&lt;/p&gt;
 
-&lt;p&gt;A cursory browse of this question may lead you to believe that it’s because RSA is slower, meant to be used on fixed or small sizes of data, or that it adds unnecessary overhead. If you drill a bit deeper into RSA vs AES, you may even find that using RSA in block cipher mode is nebulously “insecure.” Scary! Even if we as our lord and saviour ChatGPT, it answers thusly:
+&lt;p&gt;A cursory browse of this question may lead you to believe that it’s because RSA is slower, meant to be used on fixed or small sizes of data, or that it adds unnecessary overhead. If you drill a bit deeper into RSA vs AES, you may even find that using RSA in block cipher mode is nebulously “insecure.” Scary! Even if we ask our lord and saviour ChatGPT, it answers thusly:
 &lt;img src=&quot;/assets/img/posts/2024-01-14-a-practical-tls-handshake-walkthrough/chatgpt-tls-rsa-aes.png&quot; alt=&quot;ChatGPT&apos;s Answer&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;But Beware! All is not as it seems!&lt;/p&gt;
@@ -43,10 +43,60 @@
   &lt;li&gt;Files that end in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.bin&lt;/code&gt; are binary, and are also private&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;Feel free to set this up within a Docker container, if you need to!&lt;/p&gt;
+&lt;p&gt;We also set up a few bash functions to make things clearer moving forward. Please note that variables defined in one block of the lab may be used in other blocks as well!
+Feel free to set this up within a Docker container, if you need to.&lt;/p&gt;
 
 &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Lab&lt;/span&gt;
 &lt;span class=&quot;nb&quot;&gt;mkdir &lt;/span&gt;ca server client
+
+&lt;span class=&quot;c&quot;&gt;# Function definitions&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# Feel free to analyse these if you want, &lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# but their implementations aren&apos;t too relevant&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# converts a number to a hexadecimal representation&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# num_to_hex $number $number_of_bytes&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;function &lt;/span&gt;num_to_hex &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;printf&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;%0.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;$((&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$2&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x&quot;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$1&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# counts the number of bytes in a hex string&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;function &lt;/span&gt;hexstrlen &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;$((&lt;/span&gt; &lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$1&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;wc&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-c&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos; &apos;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;))&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# formats a variable size hex string&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# a variable size data structure has the first two bytes describing the length of the data&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# followed by the data itself&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;function &lt;/span&gt;format_variable_size_hex_str &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;num_to_hex &lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;hexstrlen &lt;span class=&quot;nv&quot;&gt;$1&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt; 2&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$1&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# converts a hex string to bytes&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;function &lt;/span&gt;hex_to_bytes &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$1&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; |  xxd &lt;span class=&quot;nt&quot;&gt;-r&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-p&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# converts bytes from a file to a hex string&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;function &lt;/span&gt;bytes_file_to_hex &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;cat&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$1&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;od&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; n &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; x1 | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;s/ *//g&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;\n&apos;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# converts bytes from a file to a hex string&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# bytes_file_block_to_hex $file $offset_bytes $block_size_bytes&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;function &lt;/span&gt;bytes_file_block_to_hex &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;cat&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$1&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;od&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; n &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; x1 &lt;span class=&quot;nt&quot;&gt;-j&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$2&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-N&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$3&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;s/ *//g&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;\n&apos;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# converts str to a hex string&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;function &lt;/span&gt;str_to_hex &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$1&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;od&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; n &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; x1 | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;s/ *//g&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;\n&apos;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# function repeat a string a given number of times&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# repeat_times $str $times&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;function &lt;/span&gt;repeat_times &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;printf&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$1&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;%.0s&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;1..&lt;span class=&quot;nv&quot;&gt;$2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;h1 id=&quot;the-tls-workflow&quot;&gt;The TLS Workflow&lt;/h1&gt;
@@ -63,7 +113,7 @@
 &lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;ca
 
 &lt;span class=&quot;c&quot;&gt;# Generate the private key for the CA&lt;/span&gt;
-openssl genrsa &lt;span class=&quot;nt&quot;&gt;-des3&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; ca.key 2048 &lt;span class=&quot;c&quot;&gt;# using password &quot;password&quot;, since we are super secure&lt;/span&gt;
+openssl genrsa &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; ca.key 2048 
 
 &lt;span class=&quot;c&quot;&gt;# Generate the CA certificate&lt;/span&gt;
 openssl req &lt;span class=&quot;nt&quot;&gt;-x509&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-new&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-nodes&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-key&lt;/span&gt; ca.key &lt;span class=&quot;nt&quot;&gt;-sha256&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-days&lt;/span&gt; 1825 &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; cacert.pem
@@ -84,7 +134,7 @@ openssl genrsa &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; server.key 204
 
 &lt;span class=&quot;c&quot;&gt;# generate a Certificate Signing Request (CSR)&lt;/span&gt;
 openssl req &lt;span class=&quot;nt&quot;&gt;-new&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-key&lt;/span&gt; server.key &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; csr.pem &lt;span class=&quot;nt&quot;&gt;-sha256&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;# generate extension file&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# generate extension file using HEREDOC&lt;/span&gt;
 &lt;span class=&quot;nb&quot;&gt;cat&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; extension.txt &lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;EOF&lt;/span&gt;&lt;span class=&quot;sh&quot;&gt;
 authorityKeyIdentifier=keyid,issuer
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
@@ -98,6 +148,7 @@ DNS.3 = *.vaishnavsm.com
 &lt;/span&gt;&lt;span class=&quot;c&quot;&gt;# send the CSR to the CA&lt;/span&gt;
 &lt;span class=&quot;nb&quot;&gt;cp &lt;/span&gt;csr.pem extension.txt ../ca/
 
+&lt;span class=&quot;c&quot;&gt;# ------------&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;# CA&lt;/span&gt;
 &lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; ../ca
 
@@ -143,6 +194,15 @@ This includes:&lt;/p&gt;
     &lt;span class=&quot;na&quot;&gt;compression_methods&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Lab, Client&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# We just set up the values of the randoms here - This will be used in the future&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# Note that there are a total of 32 bytes in the random:&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# 4 from the timestamp and 28 from the random data&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;CLIENT_TS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1705212000
+&lt;span class=&quot;nv&quot;&gt;CLIENT_RANDOM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
+&lt;span class=&quot;nv&quot;&gt;FULL_CLIENT_RANDOM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;num_to_hex &lt;span class=&quot;nv&quot;&gt;$CLIENT_TS&lt;/span&gt; 4&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$CLIENT_RANDOM&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
 &lt;p&gt;&lt;strong&gt;Aside:&lt;/strong&gt;&lt;/p&gt;
 
 &lt;p&gt;Why is the version &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;{ major: 3, minor: 3 }&lt;/code&gt; if we are talking about TLS 1.2?&lt;/p&gt;
@@ -172,6 +232,15 @@ So, TLS 1.0 is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&g
     &lt;span class=&quot;na&quot;&gt;compression_method&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Lab, Server&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# We just set up the values of the randoms here - This will be used in the future&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# Note that there are a total of 32 bytes in the random:&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# 4 from the timestamp and 28 from the random data&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;SERVER_TS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1705212010
+&lt;span class=&quot;nv&quot;&gt;SERVER_RANDOM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
+&lt;span class=&quot;nv&quot;&gt;FULL_SERVER_RANDOM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;num_to_hex &lt;span class=&quot;nv&quot;&gt;$SERVER_TS&lt;/span&gt; 4&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$SERVER_RANDOM&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
 &lt;h4 id=&quot;3-server-certificate&quot;&gt;3. Server Certificate&lt;/h4&gt;
 
 &lt;p&gt;Immediately after the Server Hello, the server sends its certificate to the client.
@@ -199,6 +268,7 @@ The certificate is sent as an x.509v3 certificate. We simulate this in the lab u
 &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Lab, Server&lt;/span&gt;
 &lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;server
 &lt;span class=&quot;c&quot;&gt;# this can take some time!&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# this is usually done in advance, in most real world scenarios&lt;/span&gt;
 openssl dhparam &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; dhparam.pem 2048
 
 &lt;span class=&quot;c&quot;&gt;# view the parameters&lt;/span&gt;
@@ -215,11 +285,38 @@ openssl pkey &lt;span class=&quot;nt&quot;&gt;-in&lt;/span&gt; dhserver.key &lt;
 
 &lt;span class=&quot;c&quot;&gt;# view the parameters&lt;/span&gt;
 openssl pkey &lt;span class=&quot;nt&quot;&gt;-in&lt;/span&gt; dhserver.key &lt;span class=&quot;nt&quot;&gt;-text&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-noout&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# Outputs:&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# DH Private-Key: (2048 bit)&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# private-key:&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#     54:b1:7a:fc:e0:3e:06:15:92:b1:81:f2:47:54:0f:&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#     ...&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# public-key:&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#     00:b8:e9:ff:59:ba:8d:48:49:b5:00:99:d0:cc:a4:&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#     ...&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# P:   &lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#     00:dd:cf:3f:e8:43:db:cf:79:33:7d:27:4d:99:d3:&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#     ...&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# G:    2 (0x2)&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# generate signature&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# This function extracts the hex block between two lines from the above parameters&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;function &lt;/span&gt;extract_hex_from_params_between_lines &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    openssl pkey &lt;span class=&quot;nt&quot;&gt;-in&lt;/span&gt; dhserver.key &lt;span class=&quot;nt&quot;&gt;-text&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-noout&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;/&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$1&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;/,/&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$2&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;/p&quot;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tail&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt; +2 | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-e&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;$ d&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;:\n &apos;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;DATA_DH_P&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;extract_hex_from_params_between_lines &lt;span class=&quot;s2&quot;&gt;&quot;P:&quot;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;G:&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;DATA_DH_YS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;extract_hex_from_params_between_lines &lt;span class=&quot;s2&quot;&gt;&quot;public-key:&quot;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;P:&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;DATA_DH_G&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;2 &lt;span class=&quot;c&quot;&gt;# Copy this from the params yourself :)&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# note: we will use this in the client too when verifying&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# all the data here is public!&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;DATA_TO_HASH_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;FULL_CLIENT_RANDOM&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;FULL_SERVER_RANDOM&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;format_variable_size_hex_str &lt;span class=&quot;nv&quot;&gt;$DATA_DH_P&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)$(&lt;/span&gt;num_to_hex &lt;span class=&quot;nv&quot;&gt;$DATA_DH_G&lt;/span&gt; 1&lt;span class=&quot;si&quot;&gt;)$(&lt;/span&gt;format_variable_size_hex_str &lt;span class=&quot;nv&quot;&gt;$DATA_DH_YS&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+hex_to_bytes &lt;span class=&quot;nv&quot;&gt;$DATA_TO_HASH_HEX&lt;/span&gt; | openssl dgst &lt;span class=&quot;nt&quot;&gt;-sha256&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-sign&lt;/span&gt; server.key &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; keyexchange.sign
 
 &lt;span class=&quot;c&quot;&gt;# simulate send of parameters and public key to the server&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;# as done in `params` below&lt;/span&gt;
 &lt;span class=&quot;nb&quot;&gt;cp &lt;/span&gt;dhparam.pem ../client
 &lt;span class=&quot;nb&quot;&gt;cp &lt;/span&gt;dhserver.pem ../client
+&lt;span class=&quot;nb&quot;&gt;cp &lt;/span&gt;keyexchange.sign ../client
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;div class=&quot;language-yaml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;# Server to Client&lt;/span&gt;
@@ -261,13 +358,24 @@ openssl pkey &lt;span class=&quot;nt&quot;&gt;-in&lt;/span&gt; dhserver.key &lt;
 &lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;client
 
 &lt;span class=&quot;c&quot;&gt;# get the CA certificate&lt;/span&gt;
-&lt;span class=&quot;nb&quot;&gt;cp&lt;/span&gt; ../ca/cacert.pem
+&lt;span class=&quot;nb&quot;&gt;cp&lt;/span&gt; ../ca/cacert.pem ./
 
 &lt;span class=&quot;c&quot;&gt;# verify that the cert is trusted by the ca&lt;/span&gt;
 openssl verify &lt;span class=&quot;nt&quot;&gt;-verbose&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-CAfile&lt;/span&gt; cacert.pem  cert.pem
 
 &lt;span class=&quot;c&quot;&gt;# verify that the name matches the SAN on the cert (manually)&lt;/span&gt;
 openssl x509 &lt;span class=&quot;nt&quot;&gt;-text&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-noout&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-in&lt;/span&gt; cert.pem
+
+&lt;span class=&quot;c&quot;&gt;# extract the public key from the certificate&lt;/span&gt;
+openssl x509 &lt;span class=&quot;nt&quot;&gt;-pubkey&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-in&lt;/span&gt; cert.pem &lt;span class=&quot;nt&quot;&gt;-noout&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; server.pem
+
+&lt;span class=&quot;c&quot;&gt;# verify the signed key exchange message&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# this proves that it is indeed the server that is sending the data,&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# not some man in the middle&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# note that $DATA_TO_HASH_HEX is being reused from the server&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# this is ok, since we can recreate it using the data sent by the server&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# I am leaving that out here for succinctness&lt;/span&gt;
+hex_to_bytes &lt;span class=&quot;nv&quot;&gt;$DATA_TO_HASH_HEX&lt;/span&gt; | openssl dgst &lt;span class=&quot;nt&quot;&gt;-sha256&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-verify&lt;/span&gt; server.pem &lt;span class=&quot;nt&quot;&gt;-signature&lt;/span&gt; keyexchange.sign
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;h4 id=&quot;7-client-computes-master-secret&quot;&gt;7. Client Computes Master secret&lt;/h4&gt;
@@ -283,7 +391,7 @@ openssl x509 &lt;span class=&quot;nt&quot;&gt;-text&lt;/span&gt; &lt;span class=
 &lt;span class=&quot;c&quot;&gt;# generate the client private&lt;/span&gt;
 openssl genpkey &lt;span class=&quot;nt&quot;&gt;-paramfile&lt;/span&gt; dhparam.pem &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; dhclient.key
 &lt;span class=&quot;c&quot;&gt;# and public&lt;/span&gt;
-openssl pkey &lt;span class=&quot;nt&quot;&gt;-in&lt;/span&gt; dhserver.key &lt;span class=&quot;nt&quot;&gt;-pubout&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; dhserver.pem
+openssl pkey &lt;span class=&quot;nt&quot;&gt;-in&lt;/span&gt; dhclient.key &lt;span class=&quot;nt&quot;&gt;-pubout&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; dhclient.pem
 
 &lt;span class=&quot;c&quot;&gt;# take a look&lt;/span&gt;
 openssl pkey &lt;span class=&quot;nt&quot;&gt;-in&lt;/span&gt; dhclient.key &lt;span class=&quot;nt&quot;&gt;-text&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-noout&lt;/span&gt;
@@ -292,14 +400,10 @@ openssl pkey &lt;span class=&quot;nt&quot;&gt;-in&lt;/span&gt; dhclient.key &lt;
 openssl pkeyutl &lt;span class=&quot;nt&quot;&gt;-derive&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-inkey&lt;/span&gt; dhclient.key &lt;span class=&quot;nt&quot;&gt;-peerkey&lt;/span&gt; dhserver.pem &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; pre_master.bin
 
 &lt;span class=&quot;c&quot;&gt;# Derive master secret from pre-master secret&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;# Random values from hellos&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;CLIENT_TS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1705212000
-&lt;span class=&quot;nv&quot;&gt;CLIENT_RANDOM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
-&lt;span class=&quot;nv&quot;&gt;SERVER_TS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1705212010
-&lt;span class=&quot;nv&quot;&gt;SERVER_RANDOM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
 
-&lt;span class=&quot;nv&quot;&gt;PRF_SECRET_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;pre_master.bin | &lt;span class=&quot;nb&quot;&gt;od&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; n &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; x1 | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;s/ *//g&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;\n&apos;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;PRF_SEED_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;printf&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;%s%x%s%x%s&apos;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;master secret&quot;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;od&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; n &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; x1 | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;s/ *//g&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;\n&apos;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$CLIENT_TS&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$CLIENT_RANDOM&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$SERVER_TS&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$SERVER_RANDOM&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;PRF_SECRET_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;bytes_file_to_hex pre_master.bin&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;PRF_SEED_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;str_to_hex &lt;span class=&quot;s1&quot;&gt;&apos;master secret&apos;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;FULL_CLIENT_RANDOM&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;FULL_SERVER_RANDOM&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+
 openssl pkeyutl &lt;span class=&quot;nt&quot;&gt;-kdf&lt;/span&gt; TLS1-PRF &lt;span class=&quot;nt&quot;&gt;-kdflen&lt;/span&gt; 48 &lt;span class=&quot;nt&quot;&gt;-pkeyopt&lt;/span&gt; md:SHA256 &lt;span class=&quot;nt&quot;&gt;-pkeyopt&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;hexsecret:&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$PRF_SECRET_HEX&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-pkeyopt&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;hexseed:&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$PRF_SEED_HEX&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; master_secret.bin
 
 &lt;span class=&quot;c&quot;&gt;# View the master secret&lt;/span&gt;
@@ -368,14 +472,10 @@ openssl pkeyutl &lt;span class=&quot;nt&quot;&gt;-derive&lt;/span&gt; &lt;span c
 &lt;span class=&quot;c&quot;&gt;# Since the pre-master secret will be the same for the client and server,&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;# and all the other inputs below are also the same,&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;# the resulting master will be the same as well&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;# Random values from hellos&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;CLIENT_TS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1705212000
-&lt;span class=&quot;nv&quot;&gt;CLIENT_RANDOM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
-&lt;span class=&quot;nv&quot;&gt;SERVER_TS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1705212010
-&lt;span class=&quot;nv&quot;&gt;SERVER_RANDOM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
 
-&lt;span class=&quot;nv&quot;&gt;PRF_SECRET_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;pre_master.bin | &lt;span class=&quot;nb&quot;&gt;od&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; n &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; x1 | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;s/ *//g&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;\n&apos;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;PRF_SEED_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;printf&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;%s%x%s%x%s&apos;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;master secret&quot;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;od&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; n &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; x1 | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;s/ *//g&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;\n&apos;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$CLIENT_TS&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$CLIENT_RANDOM&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$SERVER_TS&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$SERVER_RANDOM&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;PRF_SECRET_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;bytes_file_to_hex pre_master.bin&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;PRF_SEED_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;str_to_hex &lt;span class=&quot;s1&quot;&gt;&apos;master secret&apos;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;FULL_CLIENT_RANDOM&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;FULL_SERVER_RANDOM&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+
 openssl pkeyutl &lt;span class=&quot;nt&quot;&gt;-kdf&lt;/span&gt; TLS1-PRF &lt;span class=&quot;nt&quot;&gt;-kdflen&lt;/span&gt; 48 &lt;span class=&quot;nt&quot;&gt;-pkeyopt&lt;/span&gt; md:SHA256 &lt;span class=&quot;nt&quot;&gt;-pkeyopt&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;hexsecret:&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$PRF_SECRET_HEX&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-pkeyopt&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;hexseed:&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$PRF_SEED_HEX&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; master_secret.bin
 
 &lt;span class=&quot;c&quot;&gt;# View the master secret&lt;/span&gt;
@@ -425,20 +525,17 @@ This is done using the same PRF function we used for deriving the master secret 
 &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Lab, Client and Server&lt;/span&gt;
 &lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;server
 &lt;span class=&quot;c&quot;&gt;# Key Expansion&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;CLIENT_TS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1705212000
-&lt;span class=&quot;nv&quot;&gt;CLIENT_RANDOM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
-&lt;span class=&quot;nv&quot;&gt;SERVER_TS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1705212010
-&lt;span class=&quot;nv&quot;&gt;SERVER_RANDOM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
 
-&lt;span class=&quot;nv&quot;&gt;PRF_SECRET_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;master_secret.bin | &lt;span class=&quot;nb&quot;&gt;od&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; n &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; x1 | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;s/ *//g&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;\n&apos;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;PRF_SEED_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;printf&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;%s%x%s%x%s&apos;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;key expansion&quot;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;od&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; n &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; x1 | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;s/ *//g&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;\n&apos;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$CLIENT_TS&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$CLIENT_RANDOM&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$SERVER_TS&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$SERVER_RANDOM&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
-openssl pkeyutl &lt;span class=&quot;nt&quot;&gt;-kdf&lt;/span&gt; TLS1-PRF &lt;span class=&quot;nt&quot;&gt;-kdflen&lt;/span&gt; 48 &lt;span class=&quot;nt&quot;&gt;-pkeyopt&lt;/span&gt; md:SHA256 &lt;span class=&quot;nt&quot;&gt;-pkeyopt&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;hexsecret:&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$PRF_SECRET_HEX&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-pkeyopt&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;hexseed:&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$PRF_SEED_HEX&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; keys_expanded.bin
+&lt;span class=&quot;nv&quot;&gt;PRF_SECRET_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;bytes_file_to_hex master_secret.bin&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;PRF_SEED_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;str_to_hex &lt;span class=&quot;s1&quot;&gt;&apos;key expansion&apos;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;FULL_CLIENT_RANDOM&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;FULL_SERVER_RANDOM&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+
+openssl pkeyutl &lt;span class=&quot;nt&quot;&gt;-kdf&lt;/span&gt; TLS1-PRF &lt;span class=&quot;nt&quot;&gt;-kdflen&lt;/span&gt; 128 &lt;span class=&quot;nt&quot;&gt;-pkeyopt&lt;/span&gt; md:SHA256 &lt;span class=&quot;nt&quot;&gt;-pkeyopt&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;hexsecret:&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$PRF_SECRET_HEX&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-pkeyopt&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;hexseed:&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$PRF_SEED_HEX&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; keys_expanded.bin
 
 &lt;span class=&quot;c&quot;&gt;# Break the expanded keys into the required keys for AES_256_CBC_SHA_256 mode:&lt;/span&gt;
-&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;keys_expanded.bin | &lt;span class=&quot;nb&quot;&gt;od&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; n &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; x1 &lt;span class=&quot;nt&quot;&gt;-j&lt;/span&gt; 0 &lt;span class=&quot;nt&quot;&gt;-N&lt;/span&gt; 32 | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;s/ *//g&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;\n&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; client_write_MAC_key.bin
-&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;keys_expanded.bin | &lt;span class=&quot;nb&quot;&gt;od&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; n &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; x1 &lt;span class=&quot;nt&quot;&gt;-j&lt;/span&gt; 32 &lt;span class=&quot;nt&quot;&gt;-N&lt;/span&gt; 32 | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;s/ *//g&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;\n&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; server_write_MAC_key.bin
-&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;keys_expanded.bin | &lt;span class=&quot;nb&quot;&gt;od&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; n &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; x1 &lt;span class=&quot;nt&quot;&gt;-j&lt;/span&gt; 64 &lt;span class=&quot;nt&quot;&gt;-N&lt;/span&gt; 32 | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;s/ *//g&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;\n&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; client_write_key.bin
-&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;keys_expanded.bin | &lt;span class=&quot;nb&quot;&gt;od&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; n &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; x1 &lt;span class=&quot;nt&quot;&gt;-j&lt;/span&gt; 96 &lt;span class=&quot;nt&quot;&gt;-N&lt;/span&gt; 32 | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;s/ *//g&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;\n&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; server_write_key.bin
+bytes_file_block_to_hex keys_expanded.bin 0 32 &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; client_write_MAC_key.bin
+bytes_file_block_to_hex keys_expanded.bin 32 32 &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; server_write_MAC_key.bin
+bytes_file_block_to_hex keys_expanded.bin 64 32 &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; client_write_key.bin
+bytes_file_block_to_hex keys_expanded.bin 96 32 &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; server_write_key.bin
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;h3 id=&quot;message-from-server-to-client&quot;&gt;Message From Server To Client&lt;/h3&gt;
@@ -474,29 +571,31 @@ openssl pkeyutl &lt;span class=&quot;nt&quot;&gt;-kdf&lt;/span&gt; TLS1-PRF &lt;
 &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Lab, Server&lt;/span&gt;
 &lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;server
 
-&lt;span class=&quot;nv&quot;&gt;DATA_TYPE&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;17&quot;&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# Hex of 23&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;DATA_VERSION_MAJOR&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;03&quot;&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# Hex of 3&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;DATA_VERSION_MINOR&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;03&quot;&lt;/span&gt;
 &lt;span class=&quot;nv&quot;&gt;CONTENT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;HELLO WORLD&quot;&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;CONTENT_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$CONTENT&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;od&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; n &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; x1 | &lt;span class=&quot;nb&quot;&gt;sed&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;s/ *//g&apos;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;\n&apos;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;CONTENT_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;str_to_hex &lt;span class=&quot;nv&quot;&gt;$CONTENT&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;DATA_TYPE&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;num_to_hex 23 1&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# Hex of 23&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;DATA_VERSION_MAJOR&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;num_to_hex 3 1&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;DATA_VERSION_MINOR&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;num_to_hex 3 1&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;# The format of this data is specified in the spec&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;HMAC_DATA&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;0000000000000000&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$DATA_TYPE$DATA_VERSION_MAJOR$DATA_VERSION_MINOR$CONTENT_HEX&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# the first number is the sequence number, which is assumed to be 0. It is 64 bits/8 bytes&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;HMAC_DATA&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;num_to_hex 0 8&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;DATA_TYPE&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;DATA_VERSION_MAJOR&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;DATA_VERSION_MINOR&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CONTENT_HEX&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
 
 &lt;span class=&quot;c&quot;&gt;# Compute the HMAC&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;DATA_HMAC&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$HMAC_DATA&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; | xxd &lt;span class=&quot;nt&quot;&gt;-r&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-p&lt;/span&gt; | openssl sha256 &lt;span class=&quot;nt&quot;&gt;-mac&lt;/span&gt; HMAC &lt;span class=&quot;nt&quot;&gt;-macopt&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;hexkey:&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;server_write_MAC_key.bin&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-hex&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;cut&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos; &apos;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-f&lt;/span&gt; 2&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# we need to cut since the sha produces output with some unnecessary text&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;DATA_HMAC&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;hex_to_bytes &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$HMAC_DATA&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; | openssl sha256 &lt;span class=&quot;nt&quot;&gt;-mac&lt;/span&gt; HMAC &lt;span class=&quot;nt&quot;&gt;-macopt&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;hexkey:&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;server_write_MAC_key.bin&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-hex&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;cut&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos; &apos;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-f&lt;/span&gt; 2&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
 
 &lt;span class=&quot;c&quot;&gt;# See the HMAC value&lt;/span&gt;
 &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$DATA_HMAC&lt;/span&gt;
 
 &lt;span class=&quot;c&quot;&gt;# Calculate Padding&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;# Divide HMAC data size by two as two hex characters form one byte of data&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;CONTENT_LENGTH&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;$((&lt;/span&gt; &lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$CONTENT&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;wc&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-c&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos; &apos;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$DATA_HMAC&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;wc&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-c&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos; &apos;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;))&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;CONTENT_LENGTH&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;hexstrlen &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CONTENT_HEX&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;DATA_HMAC&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
 &lt;span class=&quot;nv&quot;&gt;PADDING_LENGTH&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;$((&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-(&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$CONTENT_LENGTH&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;16&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;))&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;PADDING_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;printf&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;%0.2x&apos;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$PADDING_LENGTH&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;PADDING&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;printf&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$PADDING_HEX&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;%.0s&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;1..&lt;span class=&quot;nv&quot;&gt;$PADDING_LENGTH&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;PADDING_HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;num_to_hex &lt;span class=&quot;nv&quot;&gt;$PADDING_LENGTH&lt;/span&gt; 1&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;PADDING&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;repeat_times &lt;span class=&quot;nv&quot;&gt;$PADDING_HEX&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$PADDING_LENGTH&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
 
 &lt;span class=&quot;c&quot;&gt;# This is the data we need to encrypt&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;ENC_CONTENT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$CONTENT_HEX$DATA_HMAC$PADDING&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;ENC_CONTENT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CONTENT_HEX&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;DATA_HMAC&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;PADDING&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
 
 &lt;span class=&quot;c&quot;&gt;# Generate the initialization vector for the CBC&lt;/span&gt;
 &lt;span class=&quot;nv&quot;&gt;IV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;openssl rand &lt;span class=&quot;nt&quot;&gt;-hex&lt;/span&gt; 16&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;

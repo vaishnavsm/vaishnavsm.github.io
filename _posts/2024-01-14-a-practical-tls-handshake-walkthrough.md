@@ -1,5 +1,6 @@
 ---
 title: A Practical TLS Handshake Walkthrough
+subtitle: Manually perform each step that goes on during a TLS handshake to see what it's like
 layout: post
 tags: ['Walkthroughs', 'Security']
 ---
@@ -15,13 +16,13 @@ We won't delve too deep into TLS settings itself. Instead, the rest of this post
 
 **Aside:**
 
-I will be using RSA throughout this article to refer to the concept of asymmetric-key based encryption protocols in general, and AES to refer to the concept of symmetric key based encryption protocols. Is is 100% possible to switch out both these in TLS. For example, you may use a different key exchange algorithm. For example, you can use `tls_ecdhe_ecdsa_with_chacha20_poly1305_sha256` - which uses the Elliptic Curve Diffie Hellman key exchange (`ecdhe`) instead of RSA or standard DH , with the Elliptic Curve Digital Signature Algorithm (`ecdsa`) instead of RSA, and ChaCha20-Poly1305 (`chacha20_poly1305`) instead of RSA.
+I will be using RSA throughout this article to refer to the concept of asymmetric-key based encryption protocols in general, and AES to refer to the concept of symmetric key based encryption protocols. Is is 100% possible to switch out both these in TLS. You can even use a different key exchange algorithm. For example, you can use `tls_ecdhe_ecdsa_with_chacha20_poly1305_sha256` - which uses the Elliptic Curve Diffie Hellman key exchange (`ecdhe`) instead of RSA or standard DH , with the Elliptic Curve Digital Signature Algorithm (`ecdsa`) instead of RSA, and ChaCha20-Poly1305 (`chacha20_poly1305`) instead of AES.
 
 ## Side Quest: Why do we need to make an AES based tunnel?
 
 If you wonder why TLS uses RSA for digital signatures, but then uses that to make an AES based tunnel instead of just using the RSA algorithm itself for the tunnel, you're not alone!
 
-A cursory browse of this question may lead you to believe that it's because RSA is slower, meant to be used on fixed or small sizes of data, or that it adds unnecessary overhead. If you drill a bit deeper into RSA vs AES, you may even find that using RSA in block cipher mode is nebulously "insecure." Scary! Even if we as our lord and saviour ChatGPT, it answers thusly:
+A cursory browse of this question may lead you to believe that it's because RSA is slower, meant to be used on fixed or small sizes of data, or that it adds unnecessary overhead. If you drill a bit deeper into RSA vs AES, you may even find that using RSA in block cipher mode is nebulously "insecure." Scary! Even if we ask our lord and saviour ChatGPT, it answers thusly:
 ![ChatGPT's Answer](/assets/img/posts/2024-01-14-a-practical-tls-handshake-walkthrough/chatgpt-tls-rsa-aes.png)
 
 But Beware! All is not as it seems!
@@ -46,11 +47,61 @@ Some conventions I will follow are:
 * Files that end in `.key` are private
 * Files that end in `.bin` are binary, and are also private
 
-Feel free to set this up within a Docker container, if you need to!
+We also set up a few bash functions to make things clearer moving forward. Please note that variables defined in one block of the lab may be used in other blocks as well!
+Feel free to set this up within a Docker container, if you need to.
 
 ```bash
 # Lab
 mkdir ca server client
+
+# Function definitions
+# Feel free to analyse these if you want, 
+# but their implementations aren't too relevant
+
+# converts a number to a hexadecimal representation
+# num_to_hex $number $number_of_bytes
+function num_to_hex {
+    printf "%0.$(( 2 * $2 ))x" "$1"
+}
+
+# counts the number of bytes in a hex string
+function hexstrlen {
+    echo $(( $(echo "$1" | wc -c | tr -d ' ') / 2 ))
+}
+
+# formats a variable size hex string
+# a variable size data structure has the first two bytes describing the length of the data
+# followed by the data itself
+function format_variable_size_hex_str {
+    echo "$(num_to_hex $(hexstrlen $1) 2)$1"
+}
+
+# converts a hex string to bytes
+function hex_to_bytes {
+    echo -n "$1" |  xxd -r -p
+}
+
+# converts bytes from a file to a hex string
+function bytes_file_to_hex {
+    cat $1 | od -A n -t x1 | sed 's/ *//g' | tr -d '\n'
+}
+
+# converts bytes from a file to a hex string
+# bytes_file_block_to_hex $file $offset_bytes $block_size_bytes
+function bytes_file_block_to_hex {
+    cat $1 | od -A n -t x1 -j $2 -N $3 | sed 's/ *//g' | tr -d '\n'
+}
+
+# converts str to a hex string
+function str_to_hex {
+    echo -n "$1" | od -A n -t x1 | sed 's/ *//g' | tr -d '\n'
+}
+
+# function repeat a string a given number of times
+# repeat_times $str $times
+function repeat_times {
+    printf "$1%.0s" {1..$2}
+}
 ```
 
 # The TLS Workflow
@@ -68,7 +119,7 @@ Generating the CA is pretty simple - we just make a private key and certificate 
 cd ca
 
 # Generate the private key for the CA
-openssl genrsa -des3 -out ca.key 2048 # using password "password", since we are super secure
+openssl genrsa -out ca.key 2048 
 
 # Generate the CA certificate
 openssl req -x509 -new -nodes -key ca.key -sha256 -days 1825 -out cacert.pem
@@ -90,7 +141,7 @@ openssl genrsa -out server.key 2048
 
 # generate a Certificate Signing Request (CSR)
 openssl req -new -key server.key -out csr.pem -sha256
-# generate extension file
+# generate extension file using HEREDOC
 cat > extension.txt <<EOF
 authorityKeyIdentifier=keyid,issuer
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
@@ -104,6 +155,7 @@ EOF
 # send the CSR to the CA
 cp csr.pem extension.txt ../ca/
 
+# ------------
 # CA
 cd ../ca
 
@@ -148,6 +200,16 @@ body:
     compression_methods: 0
 ```
 
+```bash
+# Lab, Client
+# We just set up the values of the randoms here - This will be used in the future
+# Note that there are a total of 32 bytes in the random:
+# 4 from the timestamp and 28 from the random data
+CLIENT_TS=1705212000
+CLIENT_RANDOM=b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
+FULL_CLIENT_RANDOM="$(num_to_hex $CLIENT_TS 4)$CLIENT_RANDOM"
+```
+
 **Aside:**
 
 Why is the version `{ major: 3, minor: 3 }` if we are talking about TLS 1.2? 
@@ -174,6 +236,16 @@ body:
     session_id: <empty>
     cipher_suite: { 0x00,0x6B } 
     compression_method: 0
+```
+
+```bash
+# Lab, Server
+# We just set up the values of the randoms here - This will be used in the future
+# Note that there are a total of 32 bytes in the random:
+# 4 from the timestamp and 28 from the random data
+SERVER_TS=1705212010
+SERVER_RANDOM=c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
+FULL_SERVER_RANDOM="$(num_to_hex $SERVER_TS 4)$SERVER_RANDOM"
 ```
 
 #### 3. Server Certificate
@@ -206,6 +278,7 @@ The message also includes a signed hash. This signed hash is what prevents an at
 # Lab, Server
 cd server
 # this can take some time!
+# this is usually done in advance, in most real world scenarios
 openssl dhparam -out dhparam.pem 2048
 
 # view the parameters
@@ -222,11 +295,38 @@ openssl pkey -in dhserver.key -pubout -out dhserver.pem
 
 # view the parameters
 openssl pkey -in dhserver.key -text -noout
+# Outputs:
+# DH Private-Key: (2048 bit)
+# private-key:
+#     54:b1:7a:fc:e0:3e:06:15:92:b1:81:f2:47:54:0f:
+#     ...
+# public-key:
+#     00:b8:e9:ff:59:ba:8d:48:49:b5:00:99:d0:cc:a4:
+#     ...
+# P:   
+#     00:dd:cf:3f:e8:43:db:cf:79:33:7d:27:4d:99:d3:
+#     ...
+# G:    2 (0x2)
+
+# generate signature
+# This function extracts the hex block between two lines from the above parameters
+function extract_hex_from_params_between_lines {
+    openssl pkey -in dhserver.key -text -noout | sed -n "/$1/,/$2/p" | tail -n +2 | sed -e '$ d' | tr -d ':\n '
+}
+DATA_DH_P=$(extract_hex_from_params_between_lines "P:" "G:")
+DATA_DH_YS=$(extract_hex_from_params_between_lines "public-key:" "P:")
+DATA_DH_G=2 # Copy this from the params yourself :)
+
+# note: we will use this in the client too when verifying
+# all the data here is public!
+DATA_TO_HASH_HEX="${FULL_CLIENT_RANDOM}${FULL_SERVER_RANDOM}$(format_variable_size_hex_str $DATA_DH_P)$(num_to_hex $DATA_DH_G 1)$(format_variable_size_hex_str $DATA_DH_YS)"
+hex_to_bytes $DATA_TO_HASH_HEX | openssl dgst -sha256 -sign server.key -out keyexchange.sign
 
 # simulate send of parameters and public key to the server
 # as done in `params` below
 cp dhparam.pem ../client
 cp dhserver.pem ../client
+cp keyexchange.sign ../client
 ```
 
 ```yaml
@@ -271,13 +371,24 @@ The client checks the certificate to see that it matches the domain the URL is c
 cd client
 
 # get the CA certificate
-cp ../ca/cacert.pem
+cp ../ca/cacert.pem ./
 
 # verify that the cert is trusted by the ca
 openssl verify -verbose -CAfile cacert.pem  cert.pem
 
 # verify that the name matches the SAN on the cert (manually)
 openssl x509 -text -noout -in cert.pem
+
+# extract the public key from the certificate
+openssl x509 -pubkey -in cert.pem -noout > server.pem
+
+# verify the signed key exchange message
+# this proves that it is indeed the server that is sending the data,
+# not some man in the middle
+# note that $DATA_TO_HASH_HEX is being reused from the server
+# this is ok, since we can recreate it using the data sent by the server
+# I am leaving that out here for succinctness
+hex_to_bytes $DATA_TO_HASH_HEX | openssl dgst -sha256 -verify server.pem -signature keyexchange.sign
 ```
 
 #### 7. Client Computes Master secret
@@ -294,7 +405,7 @@ cd client
 # generate the client private
 openssl genpkey -paramfile dhparam.pem -out dhclient.key
 # and public
-openssl pkey -in dhserver.key -pubout -out dhserver.pem
+openssl pkey -in dhclient.key -pubout -out dhclient.pem
 
 # take a look
 openssl pkey -in dhclient.key -text -noout
@@ -303,14 +414,10 @@ openssl pkey -in dhclient.key -text -noout
 openssl pkeyutl -derive -inkey dhclient.key -peerkey dhserver.pem -out pre_master.bin
 
 # Derive master secret from pre-master secret
-# Random values from hellos
-CLIENT_TS=1705212000
-CLIENT_RANDOM=b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
-SERVER_TS=1705212010
-SERVER_RANDOM=c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
 
-PRF_SECRET_HEX=$(cat pre_master.bin | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
-PRF_SEED_HEX=$(printf '%s%x%s%x%s' "$(echo "master secret" | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')" $CLIENT_TS $CLIENT_RANDOM $SERVER_TS $SERVER_RANDOM)
+PRF_SECRET_HEX=$(bytes_file_to_hex pre_master.bin)
+PRF_SEED_HEX="$(str_to_hex 'master secret')${FULL_CLIENT_RANDOM}${FULL_SERVER_RANDOM}"
+
 openssl pkeyutl -kdf TLS1-PRF -kdflen 48 -pkeyopt md:SHA256 -pkeyopt "hexsecret:$PRF_SECRET_HEX" -pkeyopt "hexseed:$PRF_SEED_HEX" -out master_secret.bin
 
 # View the master secret
@@ -383,14 +490,10 @@ openssl pkeyutl -derive -inkey dhserver.key -peerkey dhclient.pem -out pre_maste
 # Since the pre-master secret will be the same for the client and server,
 # and all the other inputs below are also the same,
 # the resulting master will be the same as well
-# Random values from hellos
-CLIENT_TS=1705212000
-CLIENT_RANDOM=b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
-SERVER_TS=1705212010
-SERVER_RANDOM=c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
 
-PRF_SECRET_HEX=$(cat pre_master.bin | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
-PRF_SEED_HEX=$(printf '%s%x%s%x%s' "$(echo "master secret" | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')" $CLIENT_TS $CLIENT_RANDOM $SERVER_TS $SERVER_RANDOM)
+PRF_SECRET_HEX=$(bytes_file_to_hex pre_master.bin)
+PRF_SEED_HEX="$(str_to_hex 'master secret')${FULL_CLIENT_RANDOM}${FULL_SERVER_RANDOM}"
+
 openssl pkeyutl -kdf TLS1-PRF -kdflen 48 -pkeyopt md:SHA256 -pkeyopt "hexsecret:$PRF_SECRET_HEX" -pkeyopt "hexseed:$PRF_SEED_HEX" -out master_secret.bin
 
 # View the master secret
@@ -442,20 +545,17 @@ This is done using the same PRF function we used for deriving the master secret 
 # Lab, Client and Server
 cd server
 # Key Expansion
-CLIENT_TS=1705212000
-CLIENT_RANDOM=b05595ec06fa079fb2ef7b618b7cdf7fb8234b5a411c505d6f5c30e6
-SERVER_TS=1705212010
-SERVER_RANDOM=c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e
 
-PRF_SECRET_HEX=$(cat master_secret.bin | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
-PRF_SEED_HEX=$(printf '%s%x%s%x%s' "$(echo "key expansion" | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')" $CLIENT_TS $CLIENT_RANDOM $SERVER_TS $SERVER_RANDOM)
-openssl pkeyutl -kdf TLS1-PRF -kdflen 48 -pkeyopt md:SHA256 -pkeyopt "hexsecret:$PRF_SECRET_HEX" -pkeyopt "hexseed:$PRF_SEED_HEX" -out keys_expanded.bin
+PRF_SECRET_HEX=$(bytes_file_to_hex master_secret.bin)
+PRF_SEED_HEX="$(str_to_hex 'key expansion')${FULL_CLIENT_RANDOM}${FULL_SERVER_RANDOM}"
+
+openssl pkeyutl -kdf TLS1-PRF -kdflen 128 -pkeyopt md:SHA256 -pkeyopt "hexsecret:$PRF_SECRET_HEX" -pkeyopt "hexseed:$PRF_SEED_HEX" -out keys_expanded.bin
 
 # Break the expanded keys into the required keys for AES_256_CBC_SHA_256 mode:
-cat keys_expanded.bin | od -A n -t x1 -j 0 -N 32 | sed 's/ *//g' | tr -d '\n' > client_write_MAC_key.bin
-cat keys_expanded.bin | od -A n -t x1 -j 32 -N 32 | sed 's/ *//g' | tr -d '\n' > server_write_MAC_key.bin
-cat keys_expanded.bin | od -A n -t x1 -j 64 -N 32 | sed 's/ *//g' | tr -d '\n' > client_write_key.bin
-cat keys_expanded.bin | od -A n -t x1 -j 96 -N 32 | sed 's/ *//g' | tr -d '\n' > server_write_key.bin
+bytes_file_block_to_hex keys_expanded.bin 0 32 > client_write_MAC_key.bin
+bytes_file_block_to_hex keys_expanded.bin 32 32 > server_write_MAC_key.bin
+bytes_file_block_to_hex keys_expanded.bin 64 32 > client_write_key.bin
+bytes_file_block_to_hex keys_expanded.bin 96 32 > server_write_key.bin
 ```
 
 ### Message From Server To Client
@@ -494,29 +594,31 @@ fragment:
 # Lab, Server
 cd server
 
-DATA_TYPE="17" # Hex of 23
-DATA_VERSION_MAJOR="03" # Hex of 3
-DATA_VERSION_MINOR="03"
 CONTENT="HELLO WORLD"
-CONTENT_HEX=$(echo -n "$CONTENT" | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
+CONTENT_HEX=$(str_to_hex $CONTENT)
+DATA_TYPE=$(num_to_hex 23 1) # Hex of 23
+DATA_VERSION_MAJOR=$(num_to_hex 3 1)
+DATA_VERSION_MINOR=$(num_to_hex 3 1)
 # The format of this data is specified in the spec
-HMAC_DATA="0000000000000000$DATA_TYPE$DATA_VERSION_MAJOR$DATA_VERSION_MINOR$CONTENT_HEX"
+# the first number is the sequence number, which is assumed to be 0. It is 64 bits/8 bytes
+HMAC_DATA="$(num_to_hex 0 8)${DATA_TYPE}${DATA_VERSION_MAJOR}${DATA_VERSION_MINOR}${CONTENT_HEX}"
 
 # Compute the HMAC
-DATA_HMAC=$(echo -n "$HMAC_DATA" | xxd -r -p | openssl sha256 -mac HMAC -macopt "hexkey:$(cat server_write_MAC_key.bin)" -hex | cut -d ' ' -f 2)
+# we need to cut since the sha produces output with some unnecessary text
+DATA_HMAC=$(hex_to_bytes "$HMAC_DATA" | openssl sha256 -mac HMAC -macopt "hexkey:$(cat server_write_MAC_key.bin)" -hex | cut -d ' ' -f 2)
 
 # See the HMAC value
 echo $DATA_HMAC
 
 # Calculate Padding
 # Divide HMAC data size by two as two hex characters form one byte of data
-CONTENT_LENGTH=$(( $(echo -n "$CONTENT" | wc -c | tr -d ' ') + ( $(echo -n "$DATA_HMAC" | wc -c | tr -d ' ') / 2 ) ))
+CONTENT_LENGTH=$(hexstrlen "${CONTENT_HEX}${DATA_HMAC}")
 PADDING_LENGTH=$((16-( $CONTENT_LENGTH % 16 ) ))
-PADDING_HEX=$(printf '%0.2x' $PADDING_LENGTH)
-PADDING=$(printf "$PADDING_HEX%.0s" {1..$PADDING_LENGTH})
+PADDING_HEX=$(num_to_hex $PADDING_LENGTH 1)
+PADDING=$(repeat_times $PADDING_HEX $PADDING_LENGTH)
 
 # This is the data we need to encrypt
-ENC_CONTENT="$CONTENT_HEX$DATA_HMAC$PADDING"
+ENC_CONTENT="${CONTENT_HEX}${DATA_HMAC}${PADDING}"
 
 # Generate the initialization vector for the CBC
 IV=$(openssl rand -hex 16)

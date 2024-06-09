@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    
+
+  <title>How Many TCP Connections Can You Make? - Vaishnav Sreekanth Menon</title>
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="keywords"
+    content="blog, Vaishnav Sreekanth Menon, Vaishnav Sreekanth Menon, jekyll"
+  />
+  <meta name="author" content="Vaishnav Sreekanth Menon" />
+
+  <meta name="description" content="" />
+  <link
+    href="https://fonts.googleapis.com/css?family=Inconsolata:400,700"
+    rel="stylesheet"
+    type="text/css"
+  />
+  <link rel="stylesheet" href="https://vaishnavsm.com/css/main.css" />
+  <link rel="stylesheet" href="https://vaishnavsm.com/css/syntax.css" />
+  <link rel="icon" type="image/ico" href="https://vaishnavsm.com/assets/favicon.ico" />
+  <link rel="shortcut-icon" type="image/ico" href="https://vaishnavsm.com/assets/favicon.ico" />
+
+  <!-- For Facebook -->
+  <meta property="og:title" content="How Many TCP Connections Can You Make?" />
+  <meta property="og:image" itemprop="image" content="https://vaishnavsm.com/assets/favicon.ico" />
+  <meta property="og:description" content="" />
+
+  <!-- For Twitter -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="How Many TCP Connections Can You Make? - Vaishnav Sreekanth Menon" />
+  <meta name="twitter:description" content="" />
+  <meta name="twitter:image" content="https://vaishnavsm.com/assets/favicon.ico" />
+</head>
+
+
+  <body>
+    <div class="container">
+      <div class="navbar">
+  <a class="site-title" href="https://vaishnavsm.com/">
+    Vaishnav Sreekanth Menon
+  </a>
+
+  <ul class="pull-right">
+    
+  </ul>
+
+  <hr />
+</div>
+
+      <div class="page-title">How Many TCP Connections Can You Make?</div>
+      <div class="content"><div class="page-subtitle">
+  <br />
+   
+  <b>[</b>
+  
+  <a href="/tags/#Questions" title="Questions">Questions</a>
+   ,   
+  <a href="/tags/#TCP" title="TCP">TCP</a>
+  
+  <b>]</b>
+   
+</div>
+
+
+<p>To put it in standard interview format,</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Given n machines with m ports each, how many TCP connections can be made theoretically from one to the other?
+</code></pre></div></div>
+
+<h2 id="thinking-up-an-answer">Thinking up an answer</h2>
+
+<h3 id="the-simple-logic">The “simple logic”</h3>
+<p>For those familiar with the socket analogy, it’s easy to come up with a plausible answer.</p>
+
+<p><img src="/assets/img/posts/2024-06-08-how-many-tcp-connections/1.svg" alt="a simple analogy" style="max-height: 300px;" class="centered" />
+If you had two machines with <code class="language-plaintext highlighter-rouge">m</code> ports on each, you can make <code class="language-plaintext highlighter-rouge">m</code> “connections” (think connecting an electrical plug to a socket).</p>
+
+<p><img src="/assets/img/posts/2024-06-08-how-many-tcp-connections/2.svg" alt="maximizing socket use" style="max-height: 300px;" class="centered" />
+You may even think of a clever scheme for more than two machines, where you can use all the available sockets but one in one connection each, giving you <code class="language-plaintext highlighter-rouge">floor(mn/2)</code> possible connections between <code class="language-plaintext highlighter-rouge">n</code> machines with <code class="language-plaintext highlighter-rouge">m</code> connections each.</p>
+
+<p>Given some elementary knowledge of TCP, you would know that ports on a standard linux machine go from <code class="language-plaintext highlighter-rouge">1-65535</code>, giving you <code class="language-plaintext highlighter-rouge">m = 65535</code>, and voila, you have an answer!</p>
+
+<h3 id="hmm-what-about-servers-though">Hmm, what about servers, though?</h3>
+<p>You notice that the limiting factor in your connection count is that each socket can either make one connection or receive one connection, and that you have reached the highest possible answer in this paradigm. This is when you remember that a server can listen to multiple requests on a single TCP port!</p>
+
+<p>You try to remember if this happened by opening a new connection for each new request, or if there’s something else ongoing. You seem to remember that each time a socket accepts a connection, a <code class="language-plaintext highlighter-rouge">file descriptor</code> is created. This isn’t a socket. You note down that you’ve gotta go read more about file descriptors later, but for now, time to tackle the original question!</p>
+
+<p><img src="/assets/img/posts/2024-06-08-how-many-tcp-connections/3.svg" alt="servers!" style="max-height: 300px;" class="centered" />
+You easily think of a way to reach <code class="language-plaintext highlighter-rouge">m * (n-1)</code> connections, just by making a connection from every port on every machine to one “server” machine. Is this it? No.</p>
+
+<p><img src="/assets/img/posts/2024-06-08-how-many-tcp-connections/4.svg" alt="maximizing socket use v2" style="max-height: 300px;" class="centered" />
+You realise that the ports on the “server” are just sitting there unused. With a bit of thought, you figure out that you can sacrifice one port on another machine to create a server, to which the “free” ports on the original server can connect. With that, you have all possible connections you think, except for two ports that can’t make outbound connections because there are servers listening on them. <code class="language-plaintext highlighter-rouge">mn - 2</code>. There can’t be more. Right?</p>
+
+<h2 id="ok-but-whats-the-answer">Ok, but what’s the answer?</h2>
+
+<p>You’re pretty happy with your answer. But you want to be sure. Maybe it’s possible two more connections to get the full <code class="language-plaintext highlighter-rouge">mn</code> connections, and you’ve missed something minor. Those last two connections are the difference between someone who can think of good answers and someone who knows answers, you muse.</p>
+
+<p>You hit up your favorite online Q&amp;A site, and find the answer:</p>
+
+<p><img src="/assets/img/posts/2024-06-08-how-many-tcp-connections/answer.svg" alt="the answer" style="max-height: 300px;" class="centered" />
+<code class="language-plaintext highlighter-rouge">m^2 * n^2</code>.</p>
+
+<p>What?</p>
+
+<p><em>How</em> is that even possible?</p>
+
+<h3 id="the-answer-in-theory">The answer, in theory</h3>
+
+<p>If you go searching around at all, you will find the mantra of disambiguating a TCP connection:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>A TCP connection is
+identified by the 5-tuple of
+(
+  protocol,
+  source ip,
+  source port,
+  destination ip,
+  destination port
+)
+</code></pre></div></div>
+
+<p>Taking this as gospel, it is clear how we get to the <code class="language-plaintext highlighter-rouge">m^2*n^2</code> figure: we just multiply through by each of the 4 variable parts in turn (<code class="language-plaintext highlighter-rouge">protocol</code> is assumed to be fixed to TCP).</p>
+
+<p>This is, to me, both highly intuitive as well as kind of weird.</p>
+
+<p>It is intuitive as that’s how connections are tracked anywhere we deal with TCP. It’s how TCP connections are thought of when setting up <code class="language-plaintext highlighter-rouge">iptables</code> rules; it’s how TCP connections are thought of during <code class="language-plaintext highlighter-rouge">tcpdump</code>; it’s how TCP connections are set up when binding them to sockets.</p>
+
+<p>It’s kind of weird because we never think of TCP this way when writing apps. When we write a server-client application, we almost always assume the clients socket belongs exclusively to the server. This is something lost in the abstraction between L4 and L7, and possibly rightfully so! The client handles the port sharing on its end, and that’s something we don’t have to care about on the server, so why think about it at all?</p>
+
+<p>Given you may never have seen this in the wild though, you may ask:</p>
+
+<h3 id="but-is-that-even-actually-possible">But is that even actually possible?</h3>
+<p><em>PS: Please go to <a href="https://github.com/vaishnavsm/blog-tcp-connection-limit">this repo</a> for instructions on how to run this yourself. Things feel a lot more real if you actually run these yourself!</em></p>
+
+<p>As a matter of fact, yes it is!
+To prove that this is possible, we need to show that if we change any of the four parameters in <code class="language-plaintext highlighter-rouge">(source ip, source port, destination ip, destination port)</code>, we can create a new connection. Out of these, a few are trivial:</p>
+
+<ol>
+  <li>If you change <code class="language-plaintext highlighter-rouge">source ip</code>, it’s equivalent to connecting from a different machine, so there’s not much to test out there.</li>
+  <li>If you change <code class="language-plaintext highlighter-rouge">source port</code>, it’s equivalent to a “new connection” on the same machine, so there’s nothing to test out there either.</li>
+</ol>
+
+<p>These are situations where different clients connect to the same server.</p>
+
+<p>What we are left to prove is:</p>
+<ol>
+  <li>Given a fixed <code class="language-plaintext highlighter-rouge">(source ip, source port, destination ip)</code>, we can connect to multiple <code class="language-plaintext highlighter-rouge">destination ports</code>.</li>
+  <li>Given a fixed <code class="language-plaintext highlighter-rouge">(source ip, source port, destination port)</code>, we can connect to multiple <code class="language-plaintext highlighter-rouge">destination ips</code>.</li>
+</ol>
+
+<p>These are situations where the same “socket” (ie <code class="language-plaintext highlighter-rouge">source ip, source port</code> pair) make a connection to two different servers. In a way, it’s the opposite of how a server accepts connections from multiple clients.</p>
+
+<h4 id="test-setup">Test Setup</h4>
+<p>We have a server and a client</p>
+
+<p>Importantly, the client creates a socket with the <code class="language-plaintext highlighter-rouge">SO_REUSEADDR</code> option set. This allows multiple clients to connect to the same <code class="language-plaintext highlighter-rouge">(source ip, source port)</code> combo.</p>
+
+<h4 id="testing-for-multiple-destination-ports">Testing for multiple destination ports</h4>
+<p>We spin up two listeners on two different ports (6001 and 6002), and spin up two connectors on the same port (6000), fixing all ips on loopback.</p>
+
+<p><img src="/assets/img/posts/2024-06-08-how-many-tcp-connections/diffport.png" alt="multiple destination port demo" class="centered" />
+Success! Both the servers are getting requests from <code class="language-plaintext highlighter-rouge">127.0.0.1:6000</code>, but they have different data being echoed back!</p>
+
+<h4 id="testing-for-multiple-destination-ips">Testing for multiple destination ips</h4>
+<p>We spin up two listeners on two different ips (loopback and local lan ip) but the same port, and spin two connectors on the same port (6000).</p>
+
+<p><img src="/assets/img/posts/2024-06-08-how-many-tcp-connections/diffips.png" alt="multiple destination ip demo" class="centered" />
+Success! Both the servers are getting requests from <code class="language-plaintext highlighter-rouge">127.0.0.1:6000</code>, but they have different data being echoed back again!</p>
+
+<p><em>You may want to <a href="https://github.com/vaishnavsm/blog-tcp-connection-limit">play around</a> with interesting cases yourself! Some suggested experiments are included in the README over on Github.</em></p>
+
+<h2 id="practical-considerations">Practical Considerations</h2>
+
+<p>Let’s punch in some numbers.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>n = ip space ~ 2 ^ 32
+m ~ 2 ^ 16
+
+total number of connections =  ( 2 ^ 32 * 2^16 ) ^ 2 = 2^96 ~ 8*10^28
+ie, possible total number of connections = 80 billion billion billion
+</code></pre></div></div>
+
+<p>Of course, that’s not practically possible. You will run into other limitations far before you reach anything close to that number.</p>
+
+<p>Some of them are:</p>
+<ol>
+  <li>The number of connections your CPU can handle, especially given TLS today</li>
+  <li>The number of file descriptors that can be open at a time (<code class="language-plaintext highlighter-rouge">ulimit</code>)</li>
+  <li>The number of file descriptions that you can store in memory</li>
+  <li>The time needed to open that many connections 🤣</li>
+</ol>
+
+<p>However, this is more meant to be a theoretical explanation, so let’s leave it at that!</p>
+
+
+<script src="https://giscus.app/client.js"
+  data-repo="vaishnavsm/vaishnavsm.github.io"
+  data-repo-id="R_kgDOLAi5YA"
+  data-category="Announcements"
+  data-category-id="DIC_kwDOLAi5YM4CcLho"
+  data-mapping="og:title"
+  data-strict="0"
+  data-reactions-enabled="1"
+  data-emit-metadata="0"
+  data-input-position="top"
+  data-theme="https://vaishnavsm.com/css/comments.css"
+  data-lang="en"
+  data-loading="lazy"
+  crossorigin="anonymous"
+  async>
+</script></div>
+      <div class="footer">
+  <hr />
+  <a href="https://github.com/vaishnavsm/vaishnavsm.github.io">Powered by Jekyll. Theme forked from parchment.</a>
+</div>
+
+    </div>
+  </body>
+</html>

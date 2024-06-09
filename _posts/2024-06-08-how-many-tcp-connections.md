@@ -1,6 +1,6 @@
 ---
 title: How Many TCP Connections Can You Make?
-subtitle:
+subtitle: Tackling a classical TCP interview question beyond just theory
 layout: post
 tags: ['Questions', 'TCP']
 ---

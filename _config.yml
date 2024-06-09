@@ -26,3 +26,11 @@ permalink: /:year-:month-:day-:title/
 sass:
   style: compressed
   sass_dir: css
+
+exclude:
+  - .gitignore
+  - .ruby-version
+  - lefthook.yml
+  - LICENSE
+  - README.md
+  - Makefile

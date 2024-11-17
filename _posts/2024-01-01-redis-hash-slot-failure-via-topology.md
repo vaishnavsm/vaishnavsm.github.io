@@ -1,10 +1,10 @@
 ---
 title: Redis Hash Slot Failure via Topology
 layout: post
-tags: ['DevOps']
+tags: ['Tech', 'DevOps']
 ---
 
-One of the (many) problems with running a production grade Redis cluster in my experience has been maintaining the topology of the cluster. 
+One of the (many) problems with running a production grade Redis cluster in my experience has been maintaining the topology of the cluster.
 
 What’s that? When you run Redis in Cluster mode, you run several processes of Redis [aside: upto 1 per core, and upto ~80% RAM utilization total, in my experience is the maximum before you end up having to face the dreaded issues with RAM overusage when dumps are created, leading to crashes], with each process being either run in master mode, or run as a replica of a master, and with each master assigned a fixed hash slot.
 
@@ -39,13 +39,13 @@ Finding the current topology of the redis cluster is super easy, just run
 e7d1eecce10fd6bb5eb35b9f99a514335d9ba9ca 127.0.0.1:30001@31001,hostname1 myself,master - 0 0 1 connected 0-5460
 ```
 
-From here, we can build a representation of which nodes are replicas of which nodes and which nodes lie on which host, using which we can deduce the topology and which hash slots are at risk. To do this, we just map the `ip:port` pair to the current state flag (`slave` or `master`), and the master’s id following it. 
+From here, we can build a representation of which nodes are replicas of which nodes and which nodes lie on which host, using which we can deduce the topology and which hash slots are at risk. To do this, we just map the `ip:port` pair to the current state flag (`slave` or `master`), and the master’s id following it.
 
 This is a bit tedious, so you can use this convenience script I’ve written:
 
 ```bash
 # MIT Licenced, feel free to fork/copy from: https://github.com/vaishnavsm/redis-topology-monitor
-# note that in this example, I used a docker network, 
+# note that in this example, I used a docker network,
 # and so each redis instance is on a different "host"
 npx redis-topology-monitor find-topology -u redis://localhost:6379 -a password
 Overview
@@ -109,7 +109,7 @@ How do you actually “swap” these replicas you ask? Surprisingly, this is the
 
 ```bash
 # Run on the redis instance you want to change the status of
-# This assumes that this instance is a replica - 
+# This assumes that this instance is a replica -
 # if it is a master, this will fail unless it is empty
 # if it is an empty master, it will change into a replica
 # docs here: https://redis.io/commands/cluster-replicate/

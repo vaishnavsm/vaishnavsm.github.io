@@ -11,6 +11,14 @@ footer_text: "Powered by Jekyll. Theme forked from parchment."
 
 favicon_location: assets/favicon.ico
 
+highlighted_sections:
+  - title: Tech
+    href: /tags/#Tech
+  - title: Thoughts
+    href: /tags/#Thoughts
+  - title: Poetry
+    href: /tags/#Poetry
+
 # titles come from https://feathericons.com/
 socials:
   - href: mailto://hey@vaishnavsm.com

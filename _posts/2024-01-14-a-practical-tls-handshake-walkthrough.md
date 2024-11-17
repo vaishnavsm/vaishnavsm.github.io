@@ -2,12 +2,12 @@
 title: A Practical TLS Handshake Walkthrough
 subtitle: Manually perform each step that goes on during a TLS handshake to see what it's like
 layout: post
-tags: ['Walkthroughs', 'Security']
+tags: ['Tech', 'Walkthroughs']
 ---
 
 # What is TLS?
 
-TLS, or Transport Layer Security, is an encryption and authentication protocol that's designed to keep your data safe when browsing. It's the S in HTTPS, FTPS, and one of the S-es in SMTPS. It's what allows the padlock in the browser to padlock. The TLS protocol natively works with anything that runs on the TCP protocol. This is why you see TLS all over the place! 
+TLS, or Transport Layer Security, is an encryption and authentication protocol that's designed to keep your data safe when browsing. It's the S in HTTPS, FTPS, and one of the S-es in SMTPS. It's what allows the padlock in the browser to padlock. The TLS protocol natively works with anything that runs on the TCP protocol. This is why you see TLS all over the place!
 
 A TLS session is established right after the TCP connection is established, and before any application-protocol level (Read, HTTP, FTP, etc) shenanigans start. This ensures that anything that happens in the application layer is automatically encrypted from the beginning. This session establishment happens with a process called a TLS Handshake.
 
@@ -55,7 +55,7 @@ Feel free to set this up within a Docker container, if you need to.
 mkdir ca server client
 
 # Function definitions
-# Feel free to analyse these if you want, 
+# Feel free to analyse these if you want,
 # but their implementations aren't too relevant
 
 # converts a number to a hexadecimal representation
@@ -119,7 +119,7 @@ Generating the CA is pretty simple - we just make a private key and certificate 
 cd ca
 
 # Generate the private key for the CA
-openssl genrsa -out ca.key 2048 
+openssl genrsa -out ca.key 2048
 
 # Generate the CA certificate
 openssl req -x509 -new -nodes -key ca.key -sha256 -days 1825 -out cacert.pem
@@ -189,7 +189,7 @@ This includes:
 * The compression methods to use (`compression_methods`). We specify `0`, which is the `NULL` compression method.
 
 ```yaml
-# Client to Server: 
+# Client to Server:
 msg_type: ClientHello
 length: <message size>
 body:
@@ -212,9 +212,9 @@ FULL_CLIENT_RANDOM="$(num_to_hex $CLIENT_TS 4)$CLIENT_RANDOM"
 
 **Aside:**
 
-Why is the version `{ major: 3, minor: 3 }` if we are talking about TLS 1.2? 
+Why is the version `{ major: 3, minor: 3 }` if we are talking about TLS 1.2?
 
-TLS 1.0 was considered a minor revision of SSL 3.0 (which was `major: 3, minor: 0`). 
+TLS 1.0 was considered a minor revision of SSL 3.0 (which was `major: 3, minor: 0`).
 So, TLS 1.0 is `major: 3, minor: 1`, and the count continues from there.
 
 #### 2. Server Hello
@@ -231,10 +231,10 @@ The server responds with its own hello, making choices from the options the clie
 msg_type: ServerHello
 length: <message size>
 body:
-    server_version: { major: 3, minor: 3 } 
+    server_version: { major: 3, minor: 3 }
     random: { gmt_unix_time: 1705212010, random_bytes: [ c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e ] }
     session_id: <empty>
-    cipher_suite: { 0x00,0x6B } 
+    cipher_suite: { 0x00,0x6B }
     compression_method: 0
 ```
 
@@ -272,7 +272,7 @@ Since Diffie Hellman Ephemeral (DHE) requires parameters to be sent over what is
 
 In the lab, we generate the DHE parameters using openssl, as shown below. The server generates both the public prime and generator values for DH, and also its own private prime and the corresponding public key using the generated prime and generator.
 
-The message also includes a signed hash. This signed hash is what prevents an attacker from simply serving you the (public) certificate of the server and pretending to be the server, as it's impossible to digitally sign data without the private key. Note that until this step, nothing has been digitally signed by the server! This will occur at different points during the key exchange step, but the server will either send some digitally signed data to the client, or the client will send some encrypted data to the server to prevent this attack. The signed value contains the full random sent by both the client and server in the corresponding Hellos (32 bytes = 4 byte timestamp + 28 random bytes each), appended with the bytes in the params struct. The random bytes prevent replay attacks. Note that the params struct has variable sized values for the DH parameters, so the data sent to the hash will be `random bytes + size of dh_p (2 bytes) + raw bytes of dh_p + size of dh_g (2 bytes) + raw bytes of dh_g + size of dh_Ys + raw bytes of dh_Ys`. 
+The message also includes a signed hash. This signed hash is what prevents an attacker from simply serving you the (public) certificate of the server and pretending to be the server, as it's impossible to digitally sign data without the private key. Note that until this step, nothing has been digitally signed by the server! This will occur at different points during the key exchange step, but the server will either send some digitally signed data to the client, or the client will send some encrypted data to the server to prevent this attack. The signed value contains the full random sent by both the client and server in the corresponding Hellos (32 bytes = 4 byte timestamp + 28 random bytes each), appended with the bytes in the params struct. The random bytes prevent replay attacks. Note that the params struct has variable sized values for the DH parameters, so the data sent to the hash will be `random bytes + size of dh_p (2 bytes) + raw bytes of dh_p + size of dh_g (2 bytes) + raw bytes of dh_g + size of dh_Ys + raw bytes of dh_Ys`.
 
 ```bash
 # Lab, Server
@@ -303,7 +303,7 @@ openssl pkey -in dhserver.key -text -noout
 # public-key:
 #     00:b8:e9:ff:59:ba:8d:48:49:b5:00:99:d0:cc:a4:
 #     ...
-# P:   
+# P:
 #     00:dd:cf:3f:e8:43:db:cf:79:33:7d:27:4d:99:d3:
 #     ...
 # G:    2 (0x2)
@@ -339,7 +339,7 @@ body:
         dh_g: <generator value from dhparam.pem in lab, probably 2>
         dh_Ys: <public key from dhserver.pem in lab>
     signed_params:
-        algorithm: 
+        algorithm:
             hash: 4 # sha256
             signature: 1 # rsa
         signature: RSA_SIGN(SHA256(client_random+server_random+params))
@@ -461,7 +461,7 @@ SSL sends `messages` that are encoded over `records`. Several `messages` of the 
 
 #### 10. Client Finished
 
-Finally (for the client), the client sends a Finished message. 
+Finally (for the client), the client sends a Finished message.
 Note that this will now be encrypted with AES, as we have negotiated!
 The `handshake_messages` used in the `verify_data` is a concatenation of all the handshake messages received so far. The exact implementation isn't super important here, just know that the server can also construct this and verify that the data is correct.
 
@@ -516,7 +516,7 @@ body:
 And voila, you have a TCP connection encrypted with AES 256!
 
 ### Side Quest: Why not just use RSA Key Exchange?
-Let me define terms here first: 
+Let me define terms here first:
 
 The goal of the Key Exchange step in TLS is to get a master secret in a standardized format. The idea is that this standardized master secret can be used as the seeding secret in whatever encryption algorithm we use later, no matter what you use to arrive at the master secret. You will usually hear Diffie Hellman (or an Elliptic Curve variant) being used for this.
 
@@ -524,7 +524,7 @@ RSA is generally used as a signature in TLS - to prove that the data you're send
 However, you can _also_ use RSA to send a client generated secret to the server (a "pre-master key"), using which you can derive a master secret. This is the _RSA Key Exchange_. Remember, data can only be encrypted from the client to the server before the encrypted tunnel is set up, and the key exchange is needed to set up that tunnel!
 
 At first, this looks really nice! It doesn't require any overhead in computing Diffie Hellman secrets, so it is more performant and efficient. However, its drawback is that it doesn't offer Perfect Forward Secrecy. Very mysterious name, but a very simple concept:
- 
+
 Imagine I am a hacker that's trying to get your server data. I am working very hard to break into your server. I know this will take some time, so I record all the data that is going to your server in the mean time. They are all protected by TLS, so they are useless to me right now. One day, I finally get access to your server. I steal your private keys and get ready to pwn you. But you are smart, so you detect me, you kick me out, and you immediately replace all your private keys and certificates. Aw man, all that work, all for nothing!
 
 Or is it? I notice that you are using the RSA key exchange mode. This means that the secret that's used for encryption comes only from the client generated secret. I can now decrypt this on _all of the TLS data that I was storing in the past_, and read all the TLS-protected data I had stored earlier that I could not read before! If you had been using Diffie Hellman, this is not possible, since DH does not rely on a single secret to generate the master secret, it relies on _math_ done between two different values, which could even be public! I'm not getting into how this works, but there are excellent explanations of DH elsewhere. For example, this video on Diffie Hellman on [Khan Academy Labs](https://www.youtube.com/watch?v=M-0qt6tdHzk)
@@ -532,7 +532,7 @@ Or is it? I notice that you are using the RSA key exchange mode. This means that
 ### The TLS (1.3) Handshake
 
 The TLS 1.3 Handshake is shorter and simpler than 1.2, basically combining several steps of TLS 1.2 together, amongst other changes.
-We won't explore this much here, but you should be armed with the knowledge to understand it, if you must. 
+We won't explore this much here, but you should be armed with the knowledge to understand it, if you must.
 
 ## Sending data over TLS
 
@@ -624,7 +624,7 @@ ENC_CONTENT="${CONTENT_HEX}${DATA_HMAC}${PADDING}"
 IV=$(openssl rand -hex 16)
 
 # Encrypt the data using the server write key
-echo -n "$ENC_CONTENT" | openssl enc -aes-256-cbc -nosalt -e -K $(cat server_write_key.bin) -iv $IV -p -nopad -out request.enc 
+echo -n "$ENC_CONTENT" | openssl enc -aes-256-cbc -nosalt -e -K $(cat server_write_key.bin) -iv $IV -p -nopad -out request.enc
 
 # Send request to client
 cp request.enc ../client

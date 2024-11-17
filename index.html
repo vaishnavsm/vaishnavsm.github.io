@@ -3,33 +3,42 @@ layout: home
 ---
 
 <main class="content">
-  <nav class="socials-bar">
-    {% for socials in site.socials %}
-      <li><a href="{{ socials.href }}"><i data-feather="{{ socials.title }}"></i></a></li>
-    {% endfor %}
-  </nav>
+    <nav class="socials-bar">
+        {% for highlighted_sections in site.highlighted_sections %}
+        <li>
+            <a href="{{ highlighted_sections.href }}">{{ highlighted_sections.title }}</a>
+        </li>
+        {% endfor %}
+    </nav>
+    <br />
+    <nav class="socials-bar">
+        {% for socials in site.socials %}
+        <li>
+            <a href="{{ socials.href }}"><i data-feather="{{ socials.title }}"></i></a>
+        </li>
+        {% endfor %}
+    </nav>
 </main>
 
 <hr />
 
-{% assign has_post = false %} {% for post in site.posts %} {% if post.private ==
-true %} {% continue %} {% endif %}
+{% assign has_post = false %} {% for post in site.posts %} {% if post.private == true %} {% continue %} {% endif %}
 <div class="post-card">
-  <a class="title" href="{{site.baseurl}}{{ post.url }}"> {{ post.title }} </a>
+    <a class="title" href="{{site.baseurl}}{{ post.url }}"> {{ post.title }} </a>
 
-  <div class="details">
-    <b>{{ post.date | date: "%d %B %Y" }}</b>
-    <br />
-    {% if post.tags %}
-    <b>[</b>
-    {% for tag in post.tags %}
-    <a href="{{ site.baseurl }}/tags/#{{ tag }}">{{ tag }}</a>{% if forloop.last
-    == false %},{% endif %} {% endfor %}
-    <b>]</b>
-    {% endif %}
-  </div>
+    <div class="details">
+        <b>{{ post.date | date: "%d %B %Y" }}</b>
+        <br />
+        {% if post.tags %}
+        <b>[</b>
+        {% for tag in post.tags %}
+        <a href="{{ site.baseurl }}/tags/#{{ tag }}">{{ tag }}</a>{% if forloop.last == false %},{% endif %} {% endfor
+        %}
+        <b>]</b>
+        {% endif %}
+    </div>
 
-  <div class="subtitle">{{ post.subtitle }}</div>
+    <div class="subtitle">{{ post.subtitle }}</div>
 </div>
 {% if forloop.last == false %}
 <hr />

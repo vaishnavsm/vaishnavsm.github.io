@@ -2,7 +2,7 @@
 title: How Many TCP Connections Can You Make?
 subtitle: Tackling a classical TCP interview question beyond just theory
 layout: post
-tags: ['Questions', 'TCP']
+tags: ['Tech', 'Networking']
 ---
 {% assign media_url = "/assets/img/posts/2024-06-08-how-many-tcp-connections"  %}
 {% assign github_blog_uri = "https://github.com/vaishnavsm/blog-tcp-connection-limit"  %}

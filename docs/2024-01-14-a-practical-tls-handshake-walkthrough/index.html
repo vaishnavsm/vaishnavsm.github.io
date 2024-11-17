@@ -57,9 +57,9 @@
    
   <b>[</b>
   
-  <a href="/tags/#Walkthroughs" title="Walkthroughs">Walkthroughs</a>
+  <a href="/tags/#Tech" title="Tech">Tech</a>
    ,   
-  <a href="/tags/#Security" title="Security">Security</a>
+  <a href="/tags/#Walkthroughs" title="Walkthroughs">Walkthroughs</a>
   
   <b>]</b>
    
@@ -117,7 +117,7 @@ Feel free to set this up within a Docker container, if you need to.</p>
 <span class="nb">mkdir </span>ca server client
 
 <span class="c"># Function definitions</span>
-<span class="c"># Feel free to analyse these if you want, </span>
+<span class="c"># Feel free to analyse these if you want,</span>
 <span class="c"># but their implementations aren't too relevant</span>
 
 <span class="c"># converts a number to a hexadecimal representation</span>
@@ -180,7 +180,7 @@ Feel free to set this up within a Docker container, if you need to.</p>
 <span class="nb">cd </span>ca
 
 <span class="c"># Generate the private key for the CA</span>
-openssl genrsa <span class="nt">-out</span> ca.key 2048 
+openssl genrsa <span class="nt">-out</span> ca.key 2048
 
 <span class="c"># Generate the CA certificate</span>
 openssl req <span class="nt">-x509</span> <span class="nt">-new</span> <span class="nt">-nodes</span> <span class="nt">-key</span> ca.key <span class="nt">-sha256</span> <span class="nt">-days</span> 1825 <span class="nt">-out</span> cacert.pem
@@ -250,7 +250,7 @@ This includes:</p>
   <li>The compression methods to use (<code class="language-plaintext highlighter-rouge">compression_methods</code>). We specify <code class="language-plaintext highlighter-rouge">0</code>, which is the <code class="language-plaintext highlighter-rouge">NULL</code> compression method.</li>
 </ul>
 
-<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Client to Server: </span>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Client to Server:</span>
 <span class="na">msg_type</span><span class="pi">:</span> <span class="s">ClientHello</span>
 <span class="na">length</span><span class="pi">:</span> <span class="s">&lt;message size&gt;</span>
 <span class="na">body</span><span class="pi">:</span>
@@ -274,7 +274,7 @@ This includes:</p>
 
 <p>Why is the version <code class="language-plaintext highlighter-rouge">{ major: 3, minor: 3 }</code> if we are talking about TLS 1.2?</p>
 
-<p>TLS 1.0 was considered a minor revision of SSL 3.0 (which was <code class="language-plaintext highlighter-rouge">major: 3, minor: 0</code>). 
+<p>TLS 1.0 was considered a minor revision of SSL 3.0 (which was <code class="language-plaintext highlighter-rouge">major: 3, minor: 0</code>).
 So, TLS 1.0 is <code class="language-plaintext highlighter-rouge">major: 3, minor: 1</code>, and the count continues from there.</p>
 
 <h4 id="2-server-hello">2. Server Hello</h4>
@@ -292,10 +292,10 @@ So, TLS 1.0 is <code class="language-plaintext highlighter-rouge">major: 3, mino
 <span class="na">msg_type</span><span class="pi">:</span> <span class="s">ServerHello</span>
 <span class="na">length</span><span class="pi">:</span> <span class="s">&lt;message size&gt;</span>
 <span class="na">body</span><span class="pi">:</span>
-    <span class="na">server_version</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">major</span><span class="pi">:</span> <span class="nv">3</span><span class="pi">,</span> <span class="nv">minor</span><span class="pi">:</span> <span class="nv">3</span> <span class="pi">}</span> 
+    <span class="na">server_version</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">major</span><span class="pi">:</span> <span class="nv">3</span><span class="pi">,</span> <span class="nv">minor</span><span class="pi">:</span> <span class="nv">3</span> <span class="pi">}</span>
     <span class="na">random</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">gmt_unix_time</span><span class="pi">:</span> <span class="nv">1705212010</span><span class="pi">,</span> <span class="nv">random_bytes</span><span class="pi">:</span> <span class="pi">[</span> <span class="nv">c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e</span> <span class="pi">]</span> <span class="pi">}</span>
     <span class="na">session_id</span><span class="pi">:</span> <span class="s">&lt;empty&gt;</span>
-    <span class="na">cipher_suite</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">0x00</span><span class="pi">,</span><span class="nv">0x6B</span> <span class="pi">}</span> 
+    <span class="na">cipher_suite</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">0x00</span><span class="pi">,</span><span class="nv">0x6B</span> <span class="pi">}</span>
     <span class="na">compression_method</span><span class="pi">:</span> <span class="m">0</span>
 </code></pre></div></div>
 
@@ -360,7 +360,7 @@ openssl pkey <span class="nt">-in</span> dhserver.key <span class="nt">-text</sp
 <span class="c"># public-key:</span>
 <span class="c">#     00:b8:e9:ff:59:ba:8d:48:49:b5:00:99:d0:cc:a4:</span>
 <span class="c">#     ...</span>
-<span class="c"># P:   </span>
+<span class="c"># P:</span>
 <span class="c">#     00:dd:cf:3f:e8:43:db:cf:79:33:7d:27:4d:99:d3:</span>
 <span class="c">#     ...</span>
 <span class="c"># G:    2 (0x2)</span>
@@ -395,7 +395,7 @@ hex_to_bytes <span class="nv">$DATA_TO_HASH_HEX</span> | openssl dgst <span clas
         <span class="na">dh_g</span><span class="pi">:</span> <span class="s">&lt;generator value from dhparam.pem in lab, probably 2&gt;</span>
         <span class="na">dh_Ys</span><span class="pi">:</span> <span class="s">&lt;public key from dhserver.pem in lab&gt;</span>
     <span class="na">signed_params</span><span class="pi">:</span>
-        <span class="na">algorithm</span><span class="pi">:</span> 
+        <span class="na">algorithm</span><span class="pi">:</span>
             <span class="na">hash</span><span class="pi">:</span> <span class="m">4</span> <span class="c1"># sha256</span>
             <span class="na">signature</span><span class="pi">:</span> <span class="m">1</span> <span class="c1"># rsa</span>
         <span class="na">signature</span><span class="pi">:</span> <span class="s">RSA_SIGN(SHA256(client_random+server_random+params))</span>
@@ -512,7 +512,7 @@ This is technically an entirely different type of message than a TLS Handshake m
 
 <h4 id="10-client-finished">10. Client Finished</h4>
 
-<p>Finally (for the client), the client sends a Finished message. 
+<p>Finally (for the client), the client sends a Finished message.
 Note that this will now be encrypted with AES, as we have negotiated!
 The <code class="language-plaintext highlighter-rouge">handshake_messages</code> used in the <code class="language-plaintext highlighter-rouge">verify_data</code> is a concatenation of all the handshake messages received so far. The exact implementation isn’t super important here, just know that the server can also construct this and verify that the data is correct.</p>
 
@@ -668,7 +668,7 @@ bytes_file_block_to_hex keys_expanded.bin 96 32 <span class="o">&gt;</span> serv
 <span class="nv">IV</span><span class="o">=</span><span class="si">$(</span>openssl rand <span class="nt">-hex</span> 16<span class="si">)</span>
 
 <span class="c"># Encrypt the data using the server write key</span>
-<span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="nv">$ENC_CONTENT</span><span class="s2">"</span> | openssl enc <span class="nt">-aes-256-cbc</span> <span class="nt">-nosalt</span> <span class="nt">-e</span> <span class="nt">-K</span> <span class="si">$(</span><span class="nb">cat </span>server_write_key.bin<span class="si">)</span> <span class="nt">-iv</span> <span class="nv">$IV</span> <span class="nt">-p</span> <span class="nt">-nopad</span> <span class="nt">-out</span> request.enc 
+<span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="nv">$ENC_CONTENT</span><span class="s2">"</span> | openssl enc <span class="nt">-aes-256-cbc</span> <span class="nt">-nosalt</span> <span class="nt">-e</span> <span class="nt">-K</span> <span class="si">$(</span><span class="nb">cat </span>server_write_key.bin<span class="si">)</span> <span class="nt">-iv</span> <span class="nv">$IV</span> <span class="nt">-p</span> <span class="nt">-nopad</span> <span class="nt">-out</span> request.enc
 
 <span class="c"># Send request to client</span>
 <span class="nb">cp </span>request.enc ../client

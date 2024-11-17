@@ -57,6 +57,8 @@
    
   <b>[</b>
   
+  <a href="/tags/#Tech" title="Tech">Tech</a>
+   ,   
   <a href="/tags/#DevOps" title="DevOps">DevOps</a>
   
   <b>]</b>
@@ -106,7 +108,7 @@ e7d1eecce10fd6bb5eb35b9f99a514335d9ba9ca 127.0.0.1:30001@31001,hostname1 myself,
 <p>This is a bit tedious, so you can use this convenience script I’ve written:</p>
 
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># MIT Licenced, feel free to fork/copy from: https://github.com/vaishnavsm/redis-topology-monitor</span>
-<span class="c"># note that in this example, I used a docker network, </span>
+<span class="c"># note that in this example, I used a docker network,</span>
 <span class="c"># and so each redis instance is on a different "host"</span>
 npx redis-topology-monitor find-topology <span class="nt">-u</span> redis://localhost:6379 <span class="nt">-a</span> password
 Overview
@@ -171,7 +173,7 @@ Slot 3
 <p>How do you actually “swap” these replicas you ask? Surprisingly, this is the easiest step—we don’t even need a helper script:</p>
 
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Run on the redis instance you want to change the status of</span>
-<span class="c"># This assumes that this instance is a replica - </span>
+<span class="c"># This assumes that this instance is a replica -</span>
 <span class="c"># if it is a master, this will fail unless it is empty</span>
 <span class="c"># if it is an empty master, it will change into a replica</span>
 <span class="c"># docs here: https://redis.io/commands/cluster-replicate/</span>

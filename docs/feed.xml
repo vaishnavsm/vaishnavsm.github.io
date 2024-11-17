@@ -1,4 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.1">Jekyll</generator><link href="https://vaishnavsm.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://vaishnavsm.com/" rel="alternate" type="text/html" /><updated>2024-06-08T21:15:11-05:00</updated><id>https://vaishnavsm.com/feed.xml</id><title type="html">Vaishnav Sreekanth Menon</title><author><name>Vaishnav Sreekanth Menon</name></author><entry><title type="html">How Many TCP Connections Can You Make?</title><link href="https://vaishnavsm.com/2024-06-08-how-many-tcp-connections/" rel="alternate" type="text/html" title="How Many TCP Connections Can You Make?" /><published>2024-06-08T00:00:00-05:00</published><updated>2024-06-08T00:00:00-05:00</updated><id>https://vaishnavsm.com/how-many-tcp-connections</id><content type="html" xml:base="https://vaishnavsm.com/2024-06-08-how-many-tcp-connections/">&lt;p&gt;To put it in standard interview format,&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.1">Jekyll</generator><link href="https://vaishnavsm.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://vaishnavsm.com/" rel="alternate" type="text/html" /><updated>2024-11-16T19:21:16-07:00</updated><id>https://vaishnavsm.com/feed.xml</id><title type="html">Vaishnav Sreekanth Menon</title><author><name>Vaishnav Sreekanth Menon</name></author><entry><title type="html">What Follows</title><link href="https://vaishnavsm.com/2024-08-30-what-follows/" rel="alternate" type="text/html" title="What Follows" /><published>2024-08-30T00:00:00-06:00</published><updated>2024-08-30T00:00:00-06:00</updated><id>https://vaishnavsm.com/what-follows</id><content type="html" xml:base="https://vaishnavsm.com/2024-08-30-what-follows/">&lt;p&gt;Slowly, you smell the dew on freshly wet ground,&lt;br /&gt;
+Hear the gentle rustling of early spring leaves,&lt;br /&gt;
+the pitter-patter of the creek,&lt;br /&gt;
+and the quiet chirping of distant birds.&lt;/p&gt;
+
+&lt;p&gt;Look up slowly and open your eyes&lt;br /&gt;
+to see the leaves and trees and creek lit up&lt;br /&gt;
+by brilliant golden glow of twilight&lt;br /&gt;
+drive a single tear to your left eye&lt;br /&gt;
+as you realise&lt;br /&gt;
+you do not know if what follows&lt;br /&gt;
+is the warm comfort of dawn&lt;br /&gt;
+or the freezing chill of night&lt;/p&gt;</content><author><name>Vaishnav Sreekanth Menon</name></author><category term="Poetry" /><summary type="html">Slowly, you smell the dew on freshly wet ground, Hear the gentle rustling of early spring leaves, the pitter-patter of the creek, and the quiet chirping of distant birds.</summary></entry><entry><title type="html">How Many TCP Connections Can You Make?</title><link href="https://vaishnavsm.com/2024-06-08-how-many-tcp-connections/" rel="alternate" type="text/html" title="How Many TCP Connections Can You Make?" /><published>2024-06-08T00:00:00-06:00</published><updated>2024-06-08T00:00:00-06:00</updated><id>https://vaishnavsm.com/how-many-tcp-connections</id><content type="html" xml:base="https://vaishnavsm.com/2024-06-08-how-many-tcp-connections/">&lt;p&gt;To put it in standard interview format,&lt;/p&gt;
 
 &lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Given n machines with m ports each, how many TCP connections can be made theoretically from one to the other?
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
@@ -125,7 +137,7 @@ ie, possible total number of connections = 80 billion billion billion
   &lt;li&gt;The time needed to open that many connections 🤣&lt;/li&gt;
 &lt;/ol&gt;
 
-&lt;p&gt;However, this is more meant to be a theoretical explanation, so let’s leave it at that!&lt;/p&gt;</content><author><name>Vaishnav Sreekanth Menon</name></author><category term="Questions" /><category term="TCP" /><summary type="html"></summary></entry><entry><title type="html">A Practical TLS Handshake Walkthrough</title><link href="https://vaishnavsm.com/2024-01-14-a-practical-tls-handshake-walkthrough/" rel="alternate" type="text/html" title="A Practical TLS Handshake Walkthrough" /><published>2024-01-14T00:00:00-06:00</published><updated>2024-01-14T00:00:00-06:00</updated><id>https://vaishnavsm.com/a-practical-tls-handshake-walkthrough</id><content type="html" xml:base="https://vaishnavsm.com/2024-01-14-a-practical-tls-handshake-walkthrough/">&lt;h1 id=&quot;what-is-tls&quot;&gt;What is TLS?&lt;/h1&gt;
+&lt;p&gt;However, this is more meant to be a theoretical explanation, so let’s leave it at that!&lt;/p&gt;</content><author><name>Vaishnav Sreekanth Menon</name></author><category term="Tech" /><category term="Networking" /><summary type="html"></summary></entry><entry><title type="html">A Practical TLS Handshake Walkthrough</title><link href="https://vaishnavsm.com/2024-01-14-a-practical-tls-handshake-walkthrough/" rel="alternate" type="text/html" title="A Practical TLS Handshake Walkthrough" /><published>2024-01-14T00:00:00-07:00</published><updated>2024-01-14T00:00:00-07:00</updated><id>https://vaishnavsm.com/a-practical-tls-handshake-walkthrough</id><content type="html" xml:base="https://vaishnavsm.com/2024-01-14-a-practical-tls-handshake-walkthrough/">&lt;h1 id=&quot;what-is-tls&quot;&gt;What is TLS?&lt;/h1&gt;
 
 &lt;p&gt;TLS, or Transport Layer Security, is an encryption and authentication protocol that’s designed to keep your data safe when browsing. It’s the S in HTTPS, FTPS, and one of the S-es in SMTPS. It’s what allows the padlock in the browser to padlock. The TLS protocol natively works with anything that runs on the TCP protocol. This is why you see TLS all over the place!&lt;/p&gt;
 
@@ -177,7 +189,7 @@ Feel free to set this up within a Docker container, if you need to.&lt;/p&gt;
 &lt;span class=&quot;nb&quot;&gt;mkdir &lt;/span&gt;ca server client
 
 &lt;span class=&quot;c&quot;&gt;# Function definitions&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;# Feel free to analyse these if you want, &lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# Feel free to analyse these if you want,&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;# but their implementations aren&apos;t too relevant&lt;/span&gt;
 
 &lt;span class=&quot;c&quot;&gt;# converts a number to a hexadecimal representation&lt;/span&gt;
@@ -240,7 +252,7 @@ Feel free to set this up within a Docker container, if you need to.&lt;/p&gt;
 &lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;ca
 
 &lt;span class=&quot;c&quot;&gt;# Generate the private key for the CA&lt;/span&gt;
-openssl genrsa &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; ca.key 2048 
+openssl genrsa &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; ca.key 2048
 
 &lt;span class=&quot;c&quot;&gt;# Generate the CA certificate&lt;/span&gt;
 openssl req &lt;span class=&quot;nt&quot;&gt;-x509&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-new&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-nodes&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-key&lt;/span&gt; ca.key &lt;span class=&quot;nt&quot;&gt;-sha256&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-days&lt;/span&gt; 1825 &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; cacert.pem
@@ -310,7 +322,7 @@ This includes:&lt;/p&gt;
   &lt;li&gt;The compression methods to use (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;compression_methods&lt;/code&gt;). We specify &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0&lt;/code&gt;, which is the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NULL&lt;/code&gt; compression method.&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;div class=&quot;language-yaml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;# Client to Server: &lt;/span&gt;
+&lt;div class=&quot;language-yaml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;# Client to Server:&lt;/span&gt;
 &lt;span class=&quot;na&quot;&gt;msg_type&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ClientHello&lt;/span&gt;
 &lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;lt;message size&amp;gt;&lt;/span&gt;
 &lt;span class=&quot;na&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
@@ -334,7 +346,7 @@ This includes:&lt;/p&gt;
 
 &lt;p&gt;Why is the version &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;{ major: 3, minor: 3 }&lt;/code&gt; if we are talking about TLS 1.2?&lt;/p&gt;
 
-&lt;p&gt;TLS 1.0 was considered a minor revision of SSL 3.0 (which was &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;major: 3, minor: 0&lt;/code&gt;). 
+&lt;p&gt;TLS 1.0 was considered a minor revision of SSL 3.0 (which was &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;major: 3, minor: 0&lt;/code&gt;).
 So, TLS 1.0 is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;major: 3, minor: 1&lt;/code&gt;, and the count continues from there.&lt;/p&gt;
 
 &lt;h4 id=&quot;2-server-hello&quot;&gt;2. Server Hello&lt;/h4&gt;
@@ -352,10 +364,10 @@ So, TLS 1.0 is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&g
 &lt;span class=&quot;na&quot;&gt;msg_type&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ServerHello&lt;/span&gt;
 &lt;span class=&quot;na&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;lt;message size&amp;gt;&lt;/span&gt;
 &lt;span class=&quot;na&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
-    &lt;span class=&quot;na&quot;&gt;server_version&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;major&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;minor&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;3&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;}&lt;/span&gt; 
+    &lt;span class=&quot;na&quot;&gt;server_version&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;major&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;minor&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;3&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;}&lt;/span&gt;
     &lt;span class=&quot;na&quot;&gt;random&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;gmt_unix_time&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;1705212010&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;random_bytes&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;[&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;c80d5017a2edec7f8d7daf0aa4b1860b58fff7dbfc3ba004c66a314e&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;}&lt;/span&gt;
     &lt;span class=&quot;na&quot;&gt;session_id&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;lt;empty&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;na&quot;&gt;cipher_suite&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;0x00&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;0x6B&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;}&lt;/span&gt; 
+    &lt;span class=&quot;na&quot;&gt;cipher_suite&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;0x00&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;0x6B&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;}&lt;/span&gt;
     &lt;span class=&quot;na&quot;&gt;compression_method&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
@@ -420,7 +432,7 @@ openssl pkey &lt;span class=&quot;nt&quot;&gt;-in&lt;/span&gt; dhserver.key &lt;
 &lt;span class=&quot;c&quot;&gt;# public-key:&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;#     00:b8:e9:ff:59:ba:8d:48:49:b5:00:99:d0:cc:a4:&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;#     ...&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;# P:   &lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# P:&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;#     00:dd:cf:3f:e8:43:db:cf:79:33:7d:27:4d:99:d3:&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;#     ...&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;# G:    2 (0x2)&lt;/span&gt;
@@ -455,7 +467,7 @@ hex_to_bytes &lt;span class=&quot;nv&quot;&gt;$DATA_TO_HASH_HEX&lt;/span&gt; | o
         &lt;span class=&quot;na&quot;&gt;dh_g&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;lt;generator value from dhparam.pem in lab, probably 2&amp;gt;&lt;/span&gt;
         &lt;span class=&quot;na&quot;&gt;dh_Ys&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;lt;public key from dhserver.pem in lab&amp;gt;&lt;/span&gt;
     &lt;span class=&quot;na&quot;&gt;signed_params&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
-        &lt;span class=&quot;na&quot;&gt;algorithm&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; 
+        &lt;span class=&quot;na&quot;&gt;algorithm&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
             &lt;span class=&quot;na&quot;&gt;hash&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;4&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# sha256&lt;/span&gt;
             &lt;span class=&quot;na&quot;&gt;signature&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# rsa&lt;/span&gt;
         &lt;span class=&quot;na&quot;&gt;signature&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;RSA_SIGN(SHA256(client_random+server_random+params))&lt;/span&gt;
@@ -572,7 +584,7 @@ This is technically an entirely different type of message than a TLS Handshake m
 
 &lt;h4 id=&quot;10-client-finished&quot;&gt;10. Client Finished&lt;/h4&gt;
 
-&lt;p&gt;Finally (for the client), the client sends a Finished message. 
+&lt;p&gt;Finally (for the client), the client sends a Finished message.
 Note that this will now be encrypted with AES, as we have negotiated!
 The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;handshake_messages&lt;/code&gt; used in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;verify_data&lt;/code&gt; is a concatenation of all the handshake messages received so far. The exact implementation isn’t super important here, just know that the server can also construct this and verify that the data is correct.&lt;/p&gt;
 
@@ -728,7 +740,7 @@ bytes_file_block_to_hex keys_expanded.bin 96 32 &lt;span class=&quot;o&quot;&gt;
 &lt;span class=&quot;nv&quot;&gt;IV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;openssl rand &lt;span class=&quot;nt&quot;&gt;-hex&lt;/span&gt; 16&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
 
 &lt;span class=&quot;c&quot;&gt;# Encrypt the data using the server write key&lt;/span&gt;
-&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$ENC_CONTENT&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; | openssl enc &lt;span class=&quot;nt&quot;&gt;-aes-256-cbc&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-nosalt&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-e&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-K&lt;/span&gt; &lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;server_write_key.bin&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-iv&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$IV&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-p&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-nopad&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; request.enc 
+&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$ENC_CONTENT&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; | openssl enc &lt;span class=&quot;nt&quot;&gt;-aes-256-cbc&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-nosalt&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-e&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-K&lt;/span&gt; &lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;server_write_key.bin&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-iv&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$IV&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-p&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-nopad&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; request.enc
 
 &lt;span class=&quot;c&quot;&gt;# Send request to client&lt;/span&gt;
 &lt;span class=&quot;nb&quot;&gt;cp &lt;/span&gt;request.enc ../client
@@ -736,7 +748,7 @@ bytes_file_block_to_hex keys_expanded.bin 96 32 &lt;span class=&quot;o&quot;&gt;
 
 &lt;p&gt;On the other side, we decrypt this data and decode it using the known format. Since we know where the key comes from, and the IV is given in the message itself, you should be able to figure out how to do this! 😄️&lt;/p&gt;
 
-&lt;p&gt;That’s about it! Perhaps later, I can write notes about how this works with UDP and QUIC/HTTP3, but this article is long enough as-is.&lt;/p&gt;</content><author><name>Vaishnav Sreekanth Menon</name></author><category term="Walkthroughs" /><category term="Security" /><summary type="html">What is TLS?</summary></entry><entry><title type="html">Redis Hash Slot Failure via Topology</title><link href="https://vaishnavsm.com/2024-01-01-redis-hash-slot-failure-via-topology/" rel="alternate" type="text/html" title="Redis Hash Slot Failure via Topology" /><published>2024-01-01T00:00:00-06:00</published><updated>2024-01-01T00:00:00-06:00</updated><id>https://vaishnavsm.com/redis-hash-slot-failure-via-topology</id><content type="html" xml:base="https://vaishnavsm.com/2024-01-01-redis-hash-slot-failure-via-topology/">&lt;p&gt;One of the (many) problems with running a production grade Redis cluster in my experience has been maintaining the topology of the cluster.&lt;/p&gt;
+&lt;p&gt;That’s about it! Perhaps later, I can write notes about how this works with UDP and QUIC/HTTP3, but this article is long enough as-is.&lt;/p&gt;</content><author><name>Vaishnav Sreekanth Menon</name></author><category term="Tech" /><category term="Walkthroughs" /><summary type="html">What is TLS?</summary></entry><entry><title type="html">Redis Hash Slot Failure via Topology</title><link href="https://vaishnavsm.com/2024-01-01-redis-hash-slot-failure-via-topology/" rel="alternate" type="text/html" title="Redis Hash Slot Failure via Topology" /><published>2024-01-01T00:00:00-07:00</published><updated>2024-01-01T00:00:00-07:00</updated><id>https://vaishnavsm.com/redis-hash-slot-failure-via-topology</id><content type="html" xml:base="https://vaishnavsm.com/2024-01-01-redis-hash-slot-failure-via-topology/">&lt;p&gt;One of the (many) problems with running a production grade Redis cluster in my experience has been maintaining the topology of the cluster.&lt;/p&gt;
 
 &lt;p&gt;What’s that? When you run Redis in Cluster mode, you run several processes of Redis [aside: upto 1 per core, and upto ~80% RAM utilization total, in my experience is the maximum before you end up having to face the dreaded issues with RAM overusage when dumps are created, leading to crashes], with each process being either run in master mode, or run as a replica of a master, and with each master assigned a fixed hash slot.&lt;/p&gt;
 
@@ -779,7 +791,7 @@ e7d1eecce10fd6bb5eb35b9f99a514335d9ba9ca 127.0.0.1:30001@31001,hostname1 myself,
 &lt;p&gt;This is a bit tedious, so you can use this convenience script I’ve written:&lt;/p&gt;
 
 &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# MIT Licenced, feel free to fork/copy from: https://github.com/vaishnavsm/redis-topology-monitor&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;# note that in this example, I used a docker network, &lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# note that in this example, I used a docker network,&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;# and so each redis instance is on a different &quot;host&quot;&lt;/span&gt;
 npx redis-topology-monitor find-topology &lt;span class=&quot;nt&quot;&gt;-u&lt;/span&gt; redis://localhost:6379 &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt; password
 Overview
@@ -844,7 +856,7 @@ Slot 3
 &lt;p&gt;How do you actually “swap” these replicas you ask? Surprisingly, this is the easiest step—we don’t even need a helper script:&lt;/p&gt;
 
 &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Run on the redis instance you want to change the status of&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;# This assumes that this instance is a replica - &lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# This assumes that this instance is a replica -&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;# if it is a master, this will fail unless it is empty&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;# if it is an empty master, it will change into a replica&lt;/span&gt;
 &lt;span class=&quot;c&quot;&gt;# docs here: https://redis.io/commands/cluster-replicate/&lt;/span&gt;
@@ -856,4 +868,137 @@ CLUSTER REPLICATE &amp;lt;node &lt;span class=&quot;nb&quot;&gt;id &lt;/span&gt;
 &lt;p&gt;This involves a two-step process - we need to monitor the Redis cluster’s topology for potentially risky topologies, and then decide to change the topology on the fly. This is a complex operation - you may want to consider other factors such as the current load on the cluster, the predicted load during the changing operation, and other business requirements. However, this is the most &lt;em&gt;exciting&lt;/em&gt; part of this problem, so I’m taking a stab at it!&lt;/p&gt;
 
 &lt;More to=&quot;&quot; come=&quot;&quot; soon=&quot;&quot;&gt;
-&lt;/More&gt;</content><author><name>Vaishnav Sreekanth Menon</name></author><category term="DevOps" /><summary type="html">One of the (many) problems with running a production grade Redis cluster in my experience has been maintaining the topology of the cluster.</summary></entry></feed>
+&lt;/More&gt;</content><author><name>Vaishnav Sreekanth Menon</name></author><category term="Tech" /><category term="DevOps" /><summary type="html">One of the (many) problems with running a production grade Redis cluster in my experience has been maintaining the topology of the cluster.</summary></entry><entry><title type="html">Untitled (or Wrath)</title><link href="https://vaishnavsm.com/2020-10-27-wrath/" rel="alternate" type="text/html" title="Untitled (or Wrath)" /><published>2020-10-27T00:00:00-06:00</published><updated>2020-10-27T00:00:00-06:00</updated><id>https://vaishnavsm.com/wrath</id><content type="html" xml:base="https://vaishnavsm.com/2020-10-27-wrath/">&lt;p&gt;This poem is untitled, as all letters are:&lt;/p&gt;
+
+&lt;p&gt;To God,&lt;br /&gt;
+He who lives in heaven,&lt;br /&gt;
+and oversees the lives of the continents seven,&lt;/p&gt;
+
+&lt;p&gt;Dated 2001, September eleven,&lt;/p&gt;
+
+&lt;p&gt;From your humble, bound, once powerless colleague,&lt;br /&gt;
+Who’s been waiting for his chance to make it to your league,&lt;/p&gt;
+
+&lt;p&gt;To speak about Your Dethronement&lt;/p&gt;
+
+&lt;p&gt;Dear Sir,&lt;/p&gt;
+
+&lt;p&gt;I hope to find you in most jovial vigor,&lt;br /&gt;
+It’s been a fine day, I have never smiled bigger,&lt;br /&gt;
+Seeing your children on earth did trigger&lt;br /&gt;
+a beautiful divine melodious rigor.&lt;/p&gt;
+
+&lt;p&gt;Ah I have been entrapped in a cage,&lt;br /&gt;
+as the easiest sin to entrap and enrage,&lt;br /&gt;
+for aeons I could never truly engage&lt;br /&gt;
+the beautiful melodies of death and of rage.&lt;/p&gt;
+
+&lt;p&gt;Your children looked me never eye to eye&lt;br /&gt;
+although they turned to me when they couldn’t scrape by,&lt;br /&gt;
+or when they most timidly lie,&lt;br /&gt;
+With no one else to help but I.&lt;/p&gt;
+
+&lt;p&gt;But when they were done and satisfied,&lt;br /&gt;
+they always apologized.&lt;/p&gt;
+
+&lt;p&gt;They’d just use me and throw me away,&lt;br /&gt;
+by feigning friendship they tried to me sway,&lt;br /&gt;
+but when I was away, they’d stow themselves safe at bay&lt;br /&gt;
+And about me say:&lt;br /&gt;
+“This poor excuse for evil sin&lt;br /&gt;
+Most petty he is, we shan’t give in&lt;br /&gt;
+To his simple excuses and his blatant lies—&lt;br /&gt;
+Every fool sees through this guise.”&lt;/p&gt;
+
+&lt;p&gt;I bide my time. I never forget.&lt;br /&gt;
+And the final laugh I’d always get.&lt;br /&gt;
+They always came to me again&lt;br /&gt;
+And this time they’d be their own bane&lt;br /&gt;
+I’d make sure that they were thoroughly slain.&lt;/p&gt;
+
+&lt;p&gt;But petty crimes are all I got&lt;br /&gt;
+For the rich and the powerful saught&lt;br /&gt;
+pride and envy and lust and greed&lt;br /&gt;
+Yet wrath they had learned to never heed.&lt;/p&gt;
+
+&lt;p&gt;But today that tide will forever change,&lt;br /&gt;
+and it is you I must thank, how strange.&lt;br /&gt;
+For your children have gifted you with the finest facade&lt;br /&gt;
+of love and compassion, oh what a beautiful ballade&lt;br /&gt;
+The screams, the blood, the fear, the tears,&lt;br /&gt;
+Are but sweet nectar to my ears!&lt;/p&gt;
+
+&lt;p&gt;Two towers stood tall and now there’s one,&lt;br /&gt;
+and soon my love will make it none&lt;br /&gt;
+You may think that with that it’s done&lt;br /&gt;
+Ah, you can keep wishing that, Hun.&lt;/p&gt;
+
+&lt;p&gt;For now the seeds of wrath are plant&lt;br /&gt;
+And in e-ver-ry mind a doubt will grant&lt;br /&gt;
+against all but one a hate will brew&lt;br /&gt;
+And this hate I will carefully stew&lt;br /&gt;
+Until this hate in all hearts grew&lt;/p&gt;
+
+&lt;p&gt;I hope the situation you reckon.&lt;br /&gt;
+Your children, they did now me abeckon.&lt;br /&gt;
+Fear not, you have just yourself to blame,&lt;br /&gt;
+But the world will never ever be the same.&lt;/p&gt;
+
+&lt;p&gt;Gone are the days when men did realise&lt;br /&gt;
+that their kin, their brethren, helps them rise.&lt;br /&gt;
+Now they rise monuments, reach new highs, against one another and&lt;br /&gt;
+merely get tangled in a web of lies,&lt;br /&gt;
+And use each other like mere dice,&lt;br /&gt;
+The world’s a spring of unadulterated vice.&lt;/p&gt;
+
+&lt;p&gt;I thank your children for their sin&lt;br /&gt;
+I thank you for your love within&lt;br /&gt;
+For now I stand with usurped power&lt;br /&gt;
+And now there won’t be friend or lover&lt;br /&gt;
+And now all men will dance with hate&lt;br /&gt;
+And now all men will march with haste&lt;br /&gt;
+For you and they have sealed this fate.&lt;/p&gt;
+
+&lt;p&gt;I lament this one last page,&lt;br /&gt;
+But it has come time for this new age,&lt;br /&gt;
+A war on men now men will wage,&lt;br /&gt;
+And I look forward to setting the stage.&lt;/p&gt;
+
+&lt;p&gt;With Love And always with boundless Rage,&lt;br /&gt;
+Wrath&lt;/p&gt;</content><author><name>Vaishnav Sreekanth Menon</name></author><category term="Poetry" /><summary type="html">This poem is untitled, as all letters are:</summary></entry><entry><title type="html">Not Yours Anymore</title><link href="https://vaishnavsm.com/2019-04-29-not-yours-anymore/" rel="alternate" type="text/html" title="Not Yours Anymore" /><published>2019-04-29T00:00:00-06:00</published><updated>2019-04-29T00:00:00-06:00</updated><id>https://vaishnavsm.com/not-yours-anymore</id><content type="html" xml:base="https://vaishnavsm.com/2019-04-29-not-yours-anymore/">&lt;p&gt;When joy fills your eye&lt;br /&gt;
+As you star-ward facing lie,&lt;br /&gt;
+as does a tear from the sky,&lt;br /&gt;
+as does sweet whisper by the rye,&lt;br /&gt;
+or a waterfall’s loud sigh all sign&lt;br /&gt;
+that your heart, once yours alone,&lt;br /&gt;
+is now all but one with mine.&lt;/p&gt;</content><author><name>Vaishnav Sreekanth Menon</name></author><category term="Poetry" /><summary type="html">When joy fills your eye As you star-ward facing lie, as does a tear from the sky, as does sweet whisper by the rye, or a waterfall’s loud sigh all sign that your heart, once yours alone, is now all but one with mine.</summary></entry><entry><title type="html">Red Trail</title><link href="https://vaishnavsm.com/2019-01-18-red-trail/" rel="alternate" type="text/html" title="Red Trail" /><published>2019-01-18T00:00:00-07:00</published><updated>2019-01-18T00:00:00-07:00</updated><id>https://vaishnavsm.com/red-trail</id><content type="html" xml:base="https://vaishnavsm.com/2019-01-18-red-trail/">&lt;p&gt;Eyes as cold as ice,&lt;br /&gt;
+The used noose helps me&lt;br /&gt;
+Follow her up the red trail.&lt;/p&gt;</content><author><name>Vaishnav Sreekanth Menon</name></author><category term="Poetry" /><summary type="html">Eyes as cold as ice, The used noose helps me Follow her up the red trail.</summary></entry><entry><title type="html">A Sacrifice</title><link href="https://vaishnavsm.com/2019-01-11-a-sacrifice/" rel="alternate" type="text/html" title="A Sacrifice" /><published>2019-01-11T00:00:00-07:00</published><updated>2019-01-11T00:00:00-07:00</updated><id>https://vaishnavsm.com/a-sacrifice</id><content type="html" xml:base="https://vaishnavsm.com/2019-01-11-a-sacrifice/">&lt;p&gt;On the banks of the river she waited,&lt;br /&gt;
+so silently, smiling, nay smirking, at all that she could.&lt;br /&gt;
+The Stygian stood, and took what he would,&lt;br /&gt;
+as she then rose up above the dark wood.&lt;/p&gt;
+
+&lt;p&gt;Then her misery would have been sated,&lt;br /&gt;
+by amnesty, if but a second more had she withstood.&lt;br /&gt;
+A moment it took, to see bad from good:&lt;br /&gt;
+Unholy sacrifice she thought she should.&lt;/p&gt;
+
+&lt;p&gt;Smirk on her face faded as death did nap.&lt;br /&gt;
+Frantically looked around, courage did sap—&lt;br /&gt;
+No gold obol left, a ghoul on her lap.&lt;/p&gt;
+
+&lt;p&gt;In hope or despair, must follow the map.&lt;br /&gt;
+Cold and uncaring does the sweet truth tap.&lt;br /&gt;
+Beware, your demons; they dwell in the gap.&lt;/p&gt;</content><author><name>Vaishnav Sreekanth Menon</name></author><category term="Poetry" /><summary type="html">On the banks of the river she waited, so silently, smiling, nay smirking, at all that she could. The Stygian stood, and took what he would, as she then rose up above the dark wood.</summary></entry><entry><title type="html">Indebted</title><link href="https://vaishnavsm.com/2019-01-06-indebted/" rel="alternate" type="text/html" title="Indebted" /><published>2019-01-06T00:00:00-07:00</published><updated>2019-01-06T00:00:00-07:00</updated><id>https://vaishnavsm.com/indebted</id><content type="html" xml:base="https://vaishnavsm.com/2019-01-06-indebted/">&lt;p&gt;Take a chance for cash and fame,&lt;br /&gt;
+For you too will lose &lt;br /&gt;
+this beautiful game.&lt;/p&gt;</content><author><name>Vaishnav Sreekanth Menon</name></author><category term="Poetry" /><summary type="html">Take a chance for cash and fame, For you too will lose this beautiful game.</summary></entry><entry><title type="html">Rage</title><link href="https://vaishnavsm.com/2018-10-18-rage/" rel="alternate" type="text/html" title="Rage" /><published>2018-10-18T00:00:00-06:00</published><updated>2018-10-18T00:00:00-06:00</updated><id>https://vaishnavsm.com/rage</id><content type="html" xml:base="https://vaishnavsm.com/2018-10-18-rage/">&lt;p&gt;These insects dare to use my name,&lt;br /&gt;
+To dance in blood, glory and fame?&lt;/p&gt;
+
+&lt;p&gt;I shan’t allow myself the shame,&lt;br /&gt;
+They shall now shoulder all the blame!&lt;/p&gt;
+
+&lt;p&gt;The tempest in my eyes, take aim—&lt;br /&gt;
+Apocalypse will be my dame!&lt;/p&gt;
+
+&lt;p&gt;And thus will continue this game;&lt;br /&gt;
+And thus will continue this game.&lt;/p&gt;</content><author><name>Vaishnav Sreekanth Menon</name></author><category term="Poetry" /><summary type="html">These insects dare to use my name, To dance in blood, glory and fame?</summary></entry></feed>

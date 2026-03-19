@@ -1,15 +1,31 @@
-# Personal Blog
+# vaishnavsm.com
 
-```bash
-# Running dev mode:
-bundle exec jekyll serve 
+Static Astro site for `vaishnavsm.com`.
 
-# Generating the site:
-bundle exec jekyll build
+## Local development
+
+```sh
+bun install
+bun dev
 ```
 
-## Credits
+Other useful commands:
 
-The blog is powered by [Jekyll](https://github.com/jekyll/jekyll). Our theme
-is based on @rahul-bothra's [parchment](https://github.com/rahul-bothra/parchment).
-Syntax highlighting powered by Rouge using its gruvbox.light theme.
+- `bun run build` builds the production site into `dist/`
+- `bun run preview` serves the built output locally
+- `bun run verify:posts` checks that every legacy post in `../posts` exists in `src/content/posts` and in the built site
+
+## GitHub Pages
+
+This repo includes [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), which builds the site on pushes to `main` and deploys it with GitHub Pages.
+
+Repository setup still required on GitHub:
+
+1. Open `Settings -> Pages`
+2. Under `Build and deployment`, set `Source` to `GitHub Actions`
+3. If you want the site to publish at `https://vaishnavsm.com`, set `Custom domain` to `vaishnavsm.com` and configure the matching DNS records with your domain provider
+
+The current Astro config is already set for the custom domain:
+
+- `site: 'https://vaishnavsm.com'`
+- no `base`, which is correct for a root-domain Pages deployment

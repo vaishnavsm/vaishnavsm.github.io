@@ -1,0 +1,83 @@
+---
+import '../styles/global.css';
+import { SITE_AUTHOR, SITE_DESCRIPTION, SITE_TITLE, SITE_URL, TWITTER_HANDLE } from '../consts';
+
+interface Props {
+	title: string;
+	description?: string;
+	pageTitle?: string;
+	noindex?: boolean;
+	canonicalPath?: string;
+}
+
+const {
+	title,
+	description = SITE_DESCRIPTION,
+	pageTitle,
+	noindex = false,
+	canonicalPath,
+} = Astro.props;
+
+const siteURL = Astro.site ?? new URL(SITE_URL);
+const canonicalURL = new URL(canonicalPath ?? Astro.url.pathname, siteURL);
+const socialImage = new URL('/assets/favicon.ico', siteURL);
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<title>{title}</title>
+
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="keywords" content={`blog, ${SITE_AUTHOR}`} />
+		<meta name="author" content={SITE_AUTHOR} />
+		<meta name="description" content={description} />
+		<meta name="generator" content={Astro.generator} />
+
+		<link rel="icon" type="image/x-icon" href="/assets/favicon.ico" />
+		<link rel="shortcut icon" type="image/x-icon" href="/assets/favicon.ico" />
+		<link rel="alternate" type="application/rss+xml" title={SITE_TITLE} href={new URL('/feed.xml', siteURL)} />
+		<link rel="sitemap" href="/sitemap-index.xml" />
+		<link rel="canonical" href={canonicalURL} />
+
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content={socialImage} />
+		<meta property="og:url" content={canonicalURL} />
+
+		<meta name="twitter:card" content="summary" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={socialImage} />
+		<meta name="twitter:site" content={TWITTER_HANDLE} />
+		<meta name="twitter:creator" content={TWITTER_HANDLE} />
+
+		{noindex && <meta name="robots" content="noindex" />}
+	</head>
+	<body>
+		<div class="container">
+			<div class="navbar">
+				<a class="site-title" href="/">
+					{SITE_TITLE}
+				</a>
+
+				<ul class="pull-right"></ul>
+
+				<hr />
+			</div>
+
+			<div class="page-title">{pageTitle ?? ''}</div>
+
+			<div class="content">
+				<slot />
+			</div>
+
+			<div class="footer">
+				<hr />
+				<span>Built with Astro.</span>
+			</div>
+		</div>
+	</body>
+</html>

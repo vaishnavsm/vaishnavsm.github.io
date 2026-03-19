@@ -1,0 +1,76 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { HOME_LINKS, SITE_DESCRIPTION, SITE_TITLE, SOCIAL_LINKS } from '../consts';
+import { ICONS } from '../lib/icons';
+import { formatLongDate, getAllPosts, getPostDate, getPostUrl, slugifyTag } from '../lib/posts';
+
+const posts = await getAllPosts();
+---
+
+<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
+	<main class="home-intro">
+		<ul class="home-links">
+			{
+				HOME_LINKS.map((link) => (
+					<li>
+						<a href={link.href}>{link.label}</a>
+					</li>
+				))
+			}
+		</ul>
+		<br />
+		<ul class="socials-bar" aria-label="Social links">
+			{
+				SOCIAL_LINKS.map((link) => (
+					<li>
+						<a href={link.href} aria-label={link.label}>
+							<svg
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+								set:html={ICONS[link.icon]}
+							/>
+						</a>
+					</li>
+				))
+			}
+		</ul>
+	</main>
+
+	<hr />
+
+	{
+		posts.map((post, index) => (
+			<>
+				<div class="post-card">
+					<a class="title" href={getPostUrl(post)}>
+						{post.data.title}
+					</a>
+
+					<div class="details">
+						<b>{formatLongDate(getPostDate(post))}</b>
+						<br />
+						<b>[</b>
+						{
+							post.data.tags.map((tag, tagIndex) => (
+								<>
+									{tagIndex > 0 && ', '}
+									<a href={`/tags/${slugifyTag(tag)}/`}>{tag}</a>
+								</>
+							))
+						}
+						<b>]</b>
+					</div>
+
+					<div class="subtitle">{post.data.subtitle ?? ''}</div>
+				</div>
+
+				{index < posts.length - 1 && <hr />}
+			</>
+		))
+	}
+</BaseLayout>

@@ -1,0 +1,19 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE_TITLE } from '../consts';
+---
+
+<BaseLayout
+	title={`404 - Page not found - ${SITE_TITLE}`}
+	description="The page you requested could not be found."
+	pageTitle="404 - Page not found"
+	noindex
+	canonicalPath="/404.html"
+>
+	<div class="not-found">
+		<p>The page you requested could not be found.</p>
+		<p>
+			<a href="/">Return to the homepage</a>
+		</p>
+	</div>
+</BaseLayout>

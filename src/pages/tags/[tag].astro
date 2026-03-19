@@ -1,0 +1,32 @@
+---
+import type { GetStaticPaths } from 'astro';
+
+import { SITE_TITLE } from '../../consts';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { formatShortDate, getAllPosts, getAllTags, getPostDate, getPostUrl, type TagInfo } from '../../lib/posts';
+
+export const getStaticPaths = (async () => {
+	const posts = await getAllPosts();
+
+	return getAllTags(posts).map((tag) => ({
+		params: { tag: tag.slug },
+		props: { tag },
+	}));
+}) satisfies GetStaticPaths;
+
+const { tag } = Astro.props as { tag: TagInfo };
+---
+
+<BaseLayout title={`${tag.name} - ${SITE_TITLE}`} description={`Posts tagged ${tag.name}.`} pageTitle={tag.name}>
+	<ul class="tag-post-list">
+		{
+			tag.posts.map((post) => (
+				<li>
+					<span class="tag-list-date">{formatShortDate(getPostDate(post))}</span>
+					{' \u00bb '}
+					<a href={getPostUrl(post)}>{post.data.title}</a>
+				</li>
+			))
+		}
+	</ul>
+</BaseLayout>
